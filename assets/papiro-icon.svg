@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+<rect x="8" y="8" width="240" height="240" rx="48" fill="#0F172A"/>
+<rect x="8" y="8" width="240" height="240" rx="48" fill="none" stroke="#F59E0B" stroke-width="10"/>
+<path d="M78 200 V64 h44 c26 0 44 14 44 38 s-18 38 -44 38 h-22 v60 z" fill="#F8FAFC"/>
+<path d="M100 118 h20 c14 0 24 -7 24 -18 s-10 -18 -24 -18 h-20 z" fill="#0F172A"/>
+<rect x="150" y="150" width="52" height="36" rx="6" fill="#DC2626"/>
+<text x="176" y="175" font-family="Arial,sans-serif" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">PDF</text>
+<circle cx="196" cy="66" r="14" fill="#F59E0B"/>
+<text x="196" y="72" font-family="Arial,sans-serif" font-size="16" font-weight="bold" fill="#0F172A" text-anchor="middle">Y</text>
+</svg>

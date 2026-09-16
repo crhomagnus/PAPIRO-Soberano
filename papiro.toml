@@ -1,0 +1,19 @@
+# PAPIRO - perfil de hardware e caminhos (PRD secao 3.3 + 14)
+[perfil]
+# P0=So CPU | P1=GPU NVIDIA | P2=GPU AMD | P3=No remoto Kubuntu 16GB - deteccao no bootstrap
+ativo = "P0"
+
+[caminhos]
+raiz = "C:/PAPIRO"
+work = "C:/PAPIRO/work"
+out = "C:/PAPIRO/out"
+kb = "C:/PAPIRO/kb"
+modelos = "C:/PAPIRO/models"
+
+[modelo]
+# Cerebro fixo: Muse Spark 1.3 Free via OpenCode Zen
+id = "opencode/muse-spark-1.3-contributor-free"
+provider = "opencode"
+
+[modo]
+yolo = true  # opencode --auto

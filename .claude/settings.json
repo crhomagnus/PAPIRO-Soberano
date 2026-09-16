@@ -1,0 +1,15 @@
+{
+  "$schema": "https://code.claude.com/docs/en/settings.json",
+  "hooks": {
+    "SessionStart": [{ "matcher": "", "hooks": [{ "type": "command", "shell": "powershell", "command": "& C:\\PAPIRO\\.claude\\hooks\\doctor.ps1" }] }],
+    "UserPromptSubmit": [{ "matcher": "", "hooks": [{ "type": "command", "shell": "powershell", "command": "& C:\\PAPIRO\\.claude\\hooks\\contexto.ps1" }] }],
+    "PreToolUse": [
+      { "matcher": "Write|Edit|PowerShell|mcp__papiro__.*", "hooks": [{ "type": "command", "shell": "powershell", "command": "& C:\\PAPIRO\\.claude\\hooks\\guarda-originais.ps1" }] },
+      { "matcher": "mcp__papiro-seguranca__.*", "hooks": [{ "type": "command", "shell": "powershell", "command": "& C:\\PAPIRO\\.claude\\hooks\\confirma-sensivel.ps1" }] }
+    ],
+    "PostToolUse": [{ "matcher": "", "hooks": [{ "type": "command", "shell": "powershell", "command": "& C:\\PAPIRO\\.claude\\hooks\\valida-saida.ps1" }] }],
+    "SubagentStop": [{ "matcher": "pdf-designer|pdf-compositor", "hooks": [{ "type": "command", "shell": "powershell", "command": "& C:\\PAPIRO\\.claude\\hooks\\pede-revisao.ps1" }] }],
+    "PreCompact": [{ "matcher": "", "hooks": [{ "type": "command", "shell": "powershell", "command": "& C:\\PAPIRO\\.claude\\hooks\\salva-estado.ps1" }] }],
+    "Stop": [{ "matcher": "", "hooks": [{ "type": "command", "shell": "powershell", "command": "& C:\\PAPIRO\\.claude\\hooks\\portao-final.ps1" }] }]
+  }
+}

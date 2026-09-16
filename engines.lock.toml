@@ -1,0 +1,31 @@
+# PAPIRO engines.lock.toml - versoes conferidas e travadas (PRD §5 + §14)
+# Gerado na instalacao; hashes via pip freeze / scoop.
+
+[python]
+versao = "3.12.10"
+
+[libs]
+pymupdf = "1.27.2.3"
+pikepdf = ">=9.0"
+pypdf = "6.13.2"
+pdfplumber = ">=0.11"
+pillow = "12.2.0"
+segno = ">=1.6"
+openpyxl = ">=3.1"
+pydantic = "2.13.4"
+typer = "0.25.1"
+mcp = "1.29.0"
+pyyaml = "6.0.3"
+structlog = ">=24.0"
+watchdog = ">=4.0"
+
+[bins]
+ghostscript = "10.07.1 gswin64c.exe INSTALADO (Program Files\\gs\\gs10.07.1)"
+qpdf = "12.4.1 INSTALADO (Program Files + copia em bin\\)"
+typst = "0.15.1 INSTALADO (copia estatica em bin\\)"
+tesseract = "5.4.0.20240606 INSTALADO + por/eng/osd em models\\tessdata"
+libreoffice = "26.2.5.2 INSTALADO (detectado no PATH)"
+verapdf = "ausente - instalador CLI 1.30"
+chromium_playwright = "ausente - uv run playwright install chromium"
+ollama = "0.33.3 INSTALADO (detectado no PATH)"
+java = "17.0.20.8 Eclipse Adoptium (presente)"

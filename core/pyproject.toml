@@ -1,0 +1,35 @@
+[project]
+name = "papiro-core"
+version = "1.0.0"
+description = "Nucleo PAPIRO SOBERANO - 88 RFs, 23 RNFs, QA G1-G11"
+requires-python = ">=3.12"
+dependencies = [
+  "pymupdf>=1.27",
+  "pikepdf>=9.0",
+  "pypdf>=6.0",
+  "pdfplumber>=0.11",
+  "pillow>=11.0",
+  "segno>=1.6",
+  "openpyxl>=3.1",
+  "pydantic>=2.0",
+  "typer>=0.15",
+  "rich>=13.0",
+  "pyyaml>=6.0",
+  "img2pdf>=0.5",
+  "mcp>=1.20",
+  "structlog>=24.0",
+  "watchdog>=4.0",
+]
+
+[project.scripts]
+papiro = "papiro_core.cli:app_run"
+papiro-mcp = "papiro_core.mcp_server:main"
+papiro-seguranca-mcp = "papiro_core.mcp_seguranca:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["papiro_core*"]

@@ -1,0 +1,71 @@
+{
+  "inventario": {
+    "paginas": 2,
+    "versao_pdf": "1.3",
+    "produtor": "",
+    "criador": "",
+    "titulo": "",
+    "autor": "",
+    "criptografado": false,
+    "marcado_tags": false,
+    "tem_acroform": false,
+    "tem_camadas_ocg": false,
+    "anexos": 0,
+    "assinaturas_detectadas": 0
+  },
+  "fontes": [
+    {
+      "pagina": 1,
+      "nome": "helv",
+      "tipo": "Type1",
+      "ext": "n/a",
+      "embutida": false,
+      "encoding": "WinAnsiEncoding",
+      "to_unicode": true
+    },
+    {
+      "pagina": 2,
+      "nome": "helv",
+      "tipo": "Type1",
+      "ext": "n/a",
+      "embutida": false,
+      "encoding": "WinAnsiEncoding",
+      "to_unicode": true
+    }
+  ],
+  "imagens": [],
+  "paginas": [
+    {
+      "pagina": 1,
+      "classe": "hibrida",
+      "chars_texto": 69,
+      "cobertura_img": 0.0
+    },
+    {
+      "pagina": 2,
+      "classe": "hibrida",
+      "chars_texto": 38,
+      "cobertura_img": 0.0
+    }
+  ],
+  "revisoes": [
+    {
+      "revisoes_incrementais": "pikepdf abriu sem erro",
+      "objetos": 16
+    },
+    {
+      "pypdf_paginas": 2
+    }
+  ],
+  "risco": {
+    "flags": {
+      "javascript": false,
+      "openaction": false,
+      "launch": false,
+      "uri": 0,
+      "anexos": 0,
+      "xfa": false
+    },
+    "nota_risco": "BAIXA"
+  }
+}

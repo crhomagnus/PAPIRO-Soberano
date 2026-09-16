@@ -1,0 +1,26 @@
+receita: receituario-assinado
+versao: 1
+descricao: Receituario A5 PDF/A-2b+UA-1 assinado ICP-Brasil (PRD §9.3)
+sensivel: true
+entradas:
+  dados: {tipo: json, esquema: esquemas/receituario.schema.json}
+passos:
+  - id: compor
+    ferramenta: compose
+    com: {motor: typst, template: medico/receituario-a5, dados: $dados, padroes_pdf: [a-2b, ua-1]}
+  - id: validar
+    ferramenta: validate
+    com: {validadores: [verapdf, qpdf]}
+    exige: {verapdf: aprovado}
+  - id: revisar
+    ferramenta: qa_run
+    com: {rubrica: documento-medico}
+  - id: assinar
+    ferramenta: papiro-seguranca.sign
+    com: {certificado: a3, visivel: true, perfil: PAdES-B-B}
+    confirmacao: obrigatoria
+  - id: verificar
+    ferramenta: papiro-seguranca.verify
+saida:
+  pasta: out/medico/{data}
+  nome: receita-{id_pseudonimo}.pdf

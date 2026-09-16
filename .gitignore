@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+# OS
+Thumbs.db
+Desktop.ini
+# PAPIRO runtime (estado local, regeneravel)
+logs/*.db
+logs/*.db-shm
+logs/*.db-wal
+work/_fumaca/
+work/_e2e/
