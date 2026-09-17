@@ -100,7 +100,7 @@ Files), mas o `venv` do Windows precisa das dependências novas do `core/pyproje
 **Não verificado:** hooks .ps1, opencode com `papiro-seguranca`, agentes Claude Code no Windows.
 
 ## 8. Retomar daqui
-1. `cd ~/PAPIRO-Soberano && git status` — as mudanças desta sessão **não foram commitadas** (commit/push só com ordem).
+1. `cd ~/PAPIRO-Soberano && git log --oneline -3` — correções no commit `bf681ac`, enviado ao GitHub em 17/09/2026 por ordem do Márcio.
 2. Testes: `cd core && ~/.local/share/lancadores-claude/papiro-soberano/venv312/bin/python -m pytest -q --cov=papiro_core`.
 3. Sessão: ícone "PAPIRO Soberano Opus 5 (YOLO)" (usa a fiação nova).
 4. Próximos itens de maior valor: executor de receitas → templates RF-307 (receituário/atestado) → A3/PKCS#11 →
