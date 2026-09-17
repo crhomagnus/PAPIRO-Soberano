@@ -1,12 +1,12 @@
 ---
+name: pdf-inspetor
 description: "Inspetor N0: inventario, forense, triagem risco RF-001 a RF-009. Somente leitura."
-mode: subagent
+tools: Read, Glob, Grep, mcp__papiro__inspect, mcp__papiro__search, mcp__papiro__render_pages, mcp__papiro__outline, mcp__papiro__attachments, mcp__papiro__fonts, mcp__papiro__images, mcp__papiro__compare, mcp__papiro__validate, mcp__papiro__preflight, mcp__papiro__qa_run, mcp__papiro__jobs, mcp__papiro__engines
+disallowedTools: Write, Edit, NotebookEdit, PowerShell, Bash
 model: haiku
-temperature: 0.1
-permission:
-  edit: deny
-  bash: allow
-color: info
+effort: low
+memory: project
+color: blue
 ---
 
 # pdf-inspetor

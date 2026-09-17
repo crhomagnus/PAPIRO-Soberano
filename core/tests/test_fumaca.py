@@ -1,105 +1,93 @@
 # -*- coding: utf-8 -*-
-"""Suite fumaca PAPIRO §14.3 - 20 testes rapidos."""
-import pathlib, json
-import fitz
+"""Suite de fumaca PAPIRO §14.3 - 20 testes rapidos, portavel (Windows e Linux, sem caminho fixo)."""
+import fitz, yaml
+from papiro_core import RECIPES, engines as ENG, jobs as JOBS, mcp_server as M
+from papiro_core.adapters import compare as CMP, convert as CONV, create as CRE, edit as ED, inspect as INS
+from papiro_core.adapters import pages as PAG, qa as QA
 
-ROOT = pathlib.Path(r"C:\PAPIRO")
-import sys
-sys.path.insert(0, str(ROOT / "core"))
-from papiro_core.adapters import inspect as INS, pages as PAG, edit as ED, create as CRE
-from papiro_core.adapters import convert as CONV, intel as INTEL
-from papiro_core.adapters import qa as QA, compare as CMP
-from papiro_core import jobs as JOBS, engines as ENG
 
-WORK = ROOT / "work" / "_fumaca"
-WORK.mkdir(parents=True, exist_ok=True)
+def test_01_inventario(pdf_helv):
+    assert INS.inventario(pdf_helv)["paginas"] == 1
 
-def pdf_base(p: pathlib.Path, texto="PAPIRO fumaca"):
-    d = fitz.open()
-    pg = d.new_page()
-    pg.insert_text((72, 72), texto)
-    d.save(p)
-    d.close()
-    return p
 
-def test_01_inventario():
-    p = pdf_base(WORK / "t01.pdf")
-    assert INS.inventario(p)["paginas"] == 1
+def test_02_fontes(pdf_helv):
+    assert INS.fontes(pdf_helv)[0]["embutida"] is False
 
-def test_02_fontes():
-    assert isinstance(INS.fontes(WORK / "t01.pdf"), list)
 
-def test_03_imagens_vazio():
-    assert INS.imagens(WORK / "t01.pdf") == []
+def test_03_imagens_vazio(pdf_helv):
+    assert INS.imagens(pdf_helv) == []
 
-def test_04_classe_digital():
-    c = INS.classifica_paginas(WORK / "t01.pdf")
-    assert c[0]["classe"] in ("digital", "hibrida")
 
-def test_05_busca():
-    assert INS.busca(WORK / "t01.pdf", "PAPIRO")
+def test_04_classe_digital(pdf_helv):
+    assert INS.classifica_paginas(pdf_helv)[0]["classe"] == "digital"
 
-def test_06_risco_baixa():
-    assert INS.triagem_risco(WORK / "t01.pdf")["nota_risco"] == "BAIXA"
 
-def test_07_merge():
-    a = pdf_base(WORK / "a.pdf", "doc A")
-    b = pdf_base(WORK / "b.pdf", "doc B")
-    out = WORK / "merge.pdf"
-    assert PAG.merge([a, b], out)["paginas"] == 2
+def test_05_busca(pdf_helv):
+    assert INS.busca(pdf_helv, "Helvetica")
 
-def test_08_split():
-    outs = PAG.split(WORK / "merge.pdf", WORK, ["1-1", "2-2"])
-    assert len(outs) == 2
 
-def test_09_girar():
-    out = WORK / "rot.pdf"
-    assert PAG.girar(WORK / "t01.pdf", out, [1], 90) == 1
+def test_06_risco_baixa(pdf_helv):
+    assert INS.triagem_risco(pdf_helv)["nota_risco"] == "BAIXA"
 
-def test_10_carimbo():
-    out = WORK / "stamp.pdf"
-    assert ED.carimbo(WORK / "t01.pdf", out, "CARIMBO")["paginas"] == 1
 
-def test_11_replace():
-    out = WORK / "rep.pdf"
-    assert ED.substituir_texto(WORK / "t01.pdf", out, "fumaca", "OK")["trocas"] >= 1
+def test_07_merge(pdf_textos, tmp_path):
+    assert PAG.merge(list(pdf_textos), tmp_path / "m.pdf")["paginas"] == 2
 
-def test_12_metadados():
-    out = WORK / "meta.pdf"
-    assert ED.metadados(WORK / "t01.pdf", out, titulo="T", autor="PAPIRO")["ok"]
 
-def test_13_markdown_pdf():
-    out = WORK / "md.pdf"
-    assert CRE.markdown_para_pdf("# Oi\n\nteste", out, "T")["ok"]
+def test_08_split(pdf_textos, tmp_path):
+    PAG.merge(list(pdf_textos), tmp_path / "m.pdf")
+    assert len(PAG.split(tmp_path / "m.pdf", tmp_path, intervalos=["1", "2"])) == 2
 
-def test_14_txt():
-    out = WORK / "t.txt"
-    assert CONV.para_texto(WORK / "t01.pdf", out)["paginas"] == 1
 
-def test_15_qa_aprova_base():
-    out = WORK / "qa.pdf"
-    ED.metadados(WORK / "t01.pdf", out, titulo="QA", autor="PAPIRO")
-    qa = QA.run(out)
-    assert qa["portoes"]["G1"]["ok"] and qa["portoes"]["G2"]["ok"] and qa["portoes"]["G4"]["ok"]
+def test_09_girar(pdf_helv, tmp_path):
+    assert PAG.girar(pdf_helv, tmp_path / "r.pdf", [1], 90)["paginas_giradas"] == {1: 90}
 
-def test_16_diff_identico():
-    d = CMP.diff_texto(WORK / "t01.pdf", WORK / "t01.pdf")
-    assert d["linhas_diff"] == 0
 
-def test_17_ssim_identico():
-    s = CMP.fidelidade_ssim(WORK / "t01.pdf", WORK / "t01.pdf")
-    assert s["ssim_medio"] >= 0.99
+def test_10_carimbo(pdf_helv, tmp_path):
+    assert ED.carimbo(pdf_helv, tmp_path / "s.pdf", texto="CARIMBO")["paginas"] == 1
 
-def test_18_receita_valida():
-    import yaml
-    rec = yaml.safe_load((ROOT / "recipes" / "exemplo-receituario-assinado.yaml").read_text(encoding="utf-8"))
-    assert JOBS.validar_receita(rec) == []
+
+def test_11_replace(pdf_textos, tmp_path):
+    assert ED.substituir_texto(pdf_textos[0], tmp_path / "r.pdf", "locacao", "aluguel")["trocas"] >= 1
+
+
+def test_12_metadados(pdf_helv, tmp_path):
+    assert ED.metadados(pdf_helv, tmp_path / "m.pdf", titulo="T", autor="PAPIRO")["ok"]
+
+
+def test_13_markdown_pdf(tmp_path):
+    assert CRE.markdown_para_pdf("# Oi\n\nteste", tmp_path / "md.pdf", "T")["paginas"] == 1
+
+
+def test_14_txt(pdf_helv, tmp_path):
+    assert CONV.para_texto(pdf_helv, tmp_path / "t.txt")["paginas"] == 1
+
+
+def test_15_qa_aprova_documento_bom(pdf_bom):
+    assert QA.run(pdf_bom)["status"] == "APROVADO"
+
+
+def test_16_diff_identico(pdf_helv):
+    assert CMP.diff_texto(pdf_helv, pdf_helv)["linhas_diff"] == 0
+
+
+def test_17_ssim_identico(pdf_helv):
+    assert CMP.fidelidade_ssim(pdf_helv, pdf_helv)["ssim_pior_bloco"] >= 0.99
+
+
+def test_18_receita_valida(out_dir):
+    env = M.recipes("validate", arquivo=str(RECIPES / "exemplo-receituario-assinado.yaml"))
+    assert env["ok"] and env["dados"]["valida"], env
+    assert yaml.safe_load((RECIPES / "exemplo-receituario-assinado.yaml").read_text(encoding="utf-8"))["passos"]
+
 
 def test_19_engines():
     st = ENG.status()
-    assert st["libs"].get("pymupdf") and st["libs"].get("pikepdf")
+    assert st["libs"]["pymupdf"] and st["libs"]["pikepdf"]
 
-def test_20_tarja_real():
-    out = WORK / "tar.pdf"
-    r = ED.tarjar(WORK / "t01.pdf", out, [{"pagina": 1, "x0": 70, "y0": 60, "x1": 200, "y1": 90}])
-    assert r["tarjas"] == 1 and r["verificado"]
+
+def test_20_tarja_real(pdf_cpf, tmp_path):
+    r0 = fitz.open(pdf_cpf)[0].search_for("529.982.247-25")[0]
+    r = ED.tarjar(pdf_cpf, tmp_path / "tar.pdf", [{"pagina": 1, "x0": r0.x0, "y0": r0.y0, "x1": r0.x1, "y1": r0.y1}])
+    assert r["verificado"] and "529.982" not in fitz.open(tmp_path / "tar.pdf")[0].get_text()
+    assert JOBS.novo_job_id() != JOBS.novo_job_id()

@@ -1,3 +1,7 @@
+> ⚠️ **Atualização 16/09/2026 23h (sessão Linux):** várias afirmações de estado abaixo ("20/20 verdes", portões de QA
+> "feitos de verdade", E2E aprovado, 9 hooks registrados, flatten, sanitize) foram **desmentidas por varredura com provas**
+> e corrigidas. O estado verificado está em `HANDOFF_SESSAO_2026-09-16_CORRECOES.md`. Este arquivo fica como registro histórico.
+
 # HANDOFF — PAPIRO SOBERANO · Sessão 2026-09-16
 
 > Para a próxima IA: leia este arquivo + `AGENTS.md` + `docs/` e continue da seção **RETOMAR DAQUI**.

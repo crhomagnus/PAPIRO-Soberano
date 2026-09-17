@@ -1,12 +1,14 @@
 ---
+name: pdf-revisor-qa
 description: "Revisor QA G1-G11: aprova/reprova independente. NUNCA edita."
-mode: subagent
+tools: Read, Glob, mcp__papiro__inspect, mcp__papiro__search, mcp__papiro__render_pages, mcp__papiro__outline, mcp__papiro__attachments, mcp__papiro__fonts, mcp__papiro__images, mcp__papiro__compare, mcp__papiro__validate, mcp__papiro__preflight, mcp__papiro__qa_run, mcp__papiro__jobs, mcp__papiro__engines
+disallowedTools: Write, Edit, NotebookEdit, PowerShell, Bash
 model: opus
-temperature: 0.1
-permission:
-  edit: deny
-  bash: deny
-color: info
+effort: high
+skills:
+  - papiro-rubrica-visual
+memory: project
+color: red
 ---
 
 # pdf-revisor-qa

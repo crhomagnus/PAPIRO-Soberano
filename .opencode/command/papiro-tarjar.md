@@ -1,9 +1,10 @@
 ---
-description: "Tarja LGPD RF-808 5 passos. Skill papiro-lgpd-tarja (so-usuario). Remocao real, nunca retangulo."
+description: "Tarjamento LGPD com revisão humana."
+argument-hint: "<arquivo>"
 ---
 
 # /papiro-tarjar
 
-Tarja LGPD RF-808 5 passos. Skill papiro-lgpd-tarja (so-usuario). Remocao real, nunca retangulo.
-
-Orquestrador: papiro-soberano. Modelo: opencode/muse-spark-1.3-contributor-free. Exige QA G1-G11 antes de entregar.
+Delegue ao `pdf-seguranca`: `redact_detect` → mostre `revisao_tarja.pdf` e a lista por categoria → o usuário aprova
+cada tarja → `redact_apply confirm=true caixas_arquivo=<aprovadas>`. Retângulo preto sem remoção é proibido.
+Siga a skill `papiro-lgpd-tarja`.

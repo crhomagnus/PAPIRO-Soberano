@@ -1,9 +1,10 @@
 ---
-description: "Gestao receitas §9.3: salvar|rodar|listar|validar YAML c/ checkpoints, cache hash, exige, confirmacao."
+description: "Gestão de receitas YAML: listar, validar (e rodar quando o executor existir)."
+argument-hint: "listar|validar|rodar [arquivo]"
 ---
 
 # /papiro-receita
 
-Gestao receitas §9.3: salvar|rodar|listar|validar YAML c/ checkpoints, cache hash, exige, confirmacao.
-
-Orquestrador: papiro-soberano. Modelo: opencode/muse-spark-1.3-contributor-free. Exige QA G1-G11 antes de entregar.
+- listar: `recipes op=list`.
+- validar: `recipes op=validate arquivo=<receita.yaml>` (JSON Schema).
+- rodar: `recipes op=run` ainda é E_SEM_SUPORTE - execute os passos à mão seguindo a skill `papiro-receitas`.

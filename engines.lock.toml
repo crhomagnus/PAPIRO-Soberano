@@ -1,25 +1,65 @@
 # PAPIRO engines.lock.toml - versoes conferidas e travadas (PRD §5 + §14)
-# Gerado na instalacao; hashes via pip freeze / scoop.
+# [windows] = medido na sessao opencode de 16/09/2026 (nao reverificado no Linux).
+# [linux] e [python] = medidos em 16/09/2026 no ambiente ~/PAPIRO-Soberano (venv312 do lancador).
 
 [python]
-versao = "3.12.10"
+versao = "3.12.13"
+requires = ">=3.12"
 
-[libs]
+[python.libs]
 pymupdf = "1.27.2.3"
-pikepdf = ">=9.0"
-pypdf = "6.13.2"
-pdfplumber = ">=0.11"
-pillow = "12.2.0"
-segno = ">=1.6"
-openpyxl = ">=3.1"
-pydantic = "2.13.4"
-typer = "0.25.1"
-mcp = "1.29.0"
+pymupdf4llm = "1.27.2.3"
+pikepdf = "10.13.0.post1"
+pypdf = "6.19.0"
+pdfplumber = "0.11.10"
+pypdfium2 = "5.13.0"
+pillow = "12.3.0"
+segno = "1.6.6"
+openpyxl = "3.1.5"
+pydantic = "2.13.5"
+typer = "0.27.2"
+rich = "15.0.0"
 pyyaml = "6.0.3"
-structlog = ">=24.0"
-watchdog = ">=4.0"
+img2pdf = "0.6.3"
+mcp = "1.30.0"            # travado <2: no mcp 2.x FastMCP foi renomeado
+structlog = "26.1.0"
+watchdog = "6.0.0"
+numpy = "2.4.6"
+opencv-python-headless = "5.0.0.93"
+markdown-it-py = "4.2.0"
+fonttools = "4.65.0"
+jsonschema = "4.26.0"
+ocrmypdf = "17.12.1"
+pyhanko = "0.37.0"
+pyhanko-certvalidator = "0.32.1"
+qrcode = "8.2"
+presidio-analyzer = "2.2.364"
+spacy = "3.8.16"
+pt-core-news-sm = "3.8.0"
+keyring = "25.7.0"
+cryptography = "50.0.1"
+pytest = "9.1.1"
+pytest-cov = "7.1.0"
 
-[bins]
+[linux.bins]
+# binarios portateis em bin/linux-x86_64 (fora do git; reinstalar com os hashes abaixo)
+typst = { versao = "0.15.1", arquivo = "typst-x86_64-unknown-linux-musl.tar.xz", sha256 = "a6d077d0a95eed5a2eba715b2dae06be954f624ccbf85758a03f389ded33118c", origem = "github.com/typst/typst/releases/tag/v0.15.1" }
+qpdf = { versao = "12.4.1", arquivo = "qpdf-12.4.1-bin-linux-x86_64.zip", sha256 = "db9122e88ec00c76ac6a14e09ffb92406db1773d47b968911ff6e69f28c09bf9", origem = "github.com/qpdf/qpdf/releases/tag/v12.4.1" }
+pdfcpu = { versao = "0.15.0", arquivo = "pdfcpu_0.15.0_Linux_x86_64.tar.xz", sha256 = "652830db95e81868dbe38fbb3f506365511c99a1831b5e8955deac38f3f645f8", origem = "github.com/pdfcpu/pdfcpu/releases/tag/v0.15.0" }
+ghostscript = { versao = "10.08.0", arquivo = "ghostscript-10.08.0.tar.xz (compilado: ./configure --without-x --disable-cups --disable-gtk)", sha256 = "c20492bc8ebb96c87fa2e52a0926e1cda8cde95d66145e018ac713fed5da38cf", origem = "github.com/ArtifexSoftware/ghostpdl-downloads/releases/tag/gs10080" }
+verapdf = { versao = "1.30.2", arquivo = "verapdf-greenfield-1.30.2-installer.zip (instalacao automatica izpack)", sha256 = "6cc6341cb1af644044054b81f00a6590a7918abb18f762243de115258bcad838", origem = "software.verapdf.org/releases/1.30" }
+
+[linux.sistema]
+# instalados pelo sistema operacional (fora do controle do projeto)
+tesseract = "4.1.1 (por, eng, osd)"
+libreoffice = "7.3.7.2"
+poppler_pdffonts = "22.02.0"
+java = "openjdk 17.0.20"
+google_chrome = "149.0.7827.53"
+graphviz_dot = "presente"
+ollama = "0.30.6"
+
+[windows.bins]
 ghostscript = "10.07.1 gswin64c.exe INSTALADO (Program Files\\gs\\gs10.07.1)"
 qpdf = "12.4.1 INSTALADO (Program Files + copia em bin\\)"
 typst = "0.15.1 INSTALADO (copia estatica em bin\\)"

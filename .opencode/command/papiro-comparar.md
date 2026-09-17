@@ -1,9 +1,9 @@
 ---
-description: "Diff RF-607 de <a> <b>: texto+visual+estrutura, relatorio marcado."
+description: "Relatório de diferenças entre duas versões (RF-607)."
+argument-hint: "<a.pdf> <b.pdf>"
 ---
 
 # /papiro-comparar
 
-Diff RF-607 de <a> <b>: texto+visual+estrutura, relatorio marcado.
-
-Orquestrador: papiro-soberano. Modelo: opencode/muse-spark-1.3-contributor-free. Exige QA G1-G11 antes de entregar.
+`compare a=<a> b=<b> out_dir=out/<data>/<job>` → texto (linhas removidas/adicionadas), estrutura (páginas, fontes,
+marcadores, metadados) e visual (SSIM por página + `comparacao_marcada.pdf`). Resuma as mudanças por página.

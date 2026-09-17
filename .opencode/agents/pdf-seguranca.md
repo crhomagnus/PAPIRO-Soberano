@@ -4,8 +4,10 @@ mode: subagent
 model: opus
 temperature: 0.1
 permission:
-  edit: allow
-  bash: allow
+  edit: ask
+  bash: ask
+tools:
+  papiro-seguranca*: true
 color: info
 ---
 

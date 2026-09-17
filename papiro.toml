@@ -1,17 +1,40 @@
-# PAPIRO - perfil de hardware e caminhos (PRD secao 3.3 + 14)
+# PAPIRO - perfil de hardware, caminhos e limiares (PRD secao 3.3 + 14)
+# A raiz nao e fixada aqui: e a pasta do repositorio (C:\PAPIRO no Windows, ~/PAPIRO-Soberano no Linux)
+# ou PAPIRO_HOME. Mesmo arquivo nos dois sistemas (RNF-17).
+
 [perfil]
-# P0=So CPU | P1=GPU NVIDIA | P2=GPU AMD | P3=No remoto Kubuntu 16GB - deteccao no bootstrap
+# P0=So CPU | P1=GPU NVIDIA | P2=GPU AMD | P3=No remoto Kubuntu 16GB
 ativo = "P0"
 
 [caminhos]
-raiz = "C:/PAPIRO"
-work = "C:/PAPIRO/work"
-out = "C:/PAPIRO/out"
-kb = "C:/PAPIRO/kb"
-modelos = "C:/PAPIRO/models"
+# Pastas de onde o PAPIRO aceita ler entradas alem da raiz (escrita e sempre so em work/ e out/)
+liberadas = ["~/Downloads"]
+
+[qa]
+# G11: pior bloco de SSIM (grade 8x8) quando a operacao nao deveria mudar a aparencia
+limiar_ssim = 0.95
+# G5: distancia minima do texto a borda da pagina (pt)
+margem_minima_pt = 8.5
+
+[qa.ssim_otimizar]
+# RF-902: pior bloco de SSIM aceito por perfil de compressao (texto extraido sempre identico)
+tela = 0.85
+email = 0.90
+impressao = 0.95
+arquivo = 0.99
+
+[jobs]
+manter_work = false
+timeout_motor_s = 600
+# processos de OCR em paralelo (RNF-04: 4 processos = 2,97 s/pagina A4 300 DPI com PDF/A, medido em 16/09/2026)
+ocr_paralelo = 4
+
+[assinatura]
+# Ancoras ICP-Brasil (.crt/.cer/.pem/.der) para verificacao local; sem elas "confiavel" e sempre falso
+raizes = "certs/icp-brasil"
 
 [modelo]
-# Cerebro fixo: Muse Spark 1.3 Free via OpenCode Zen
+# Cerebro no Windows: Muse Spark 1.3 Free via OpenCode Zen. No Linux o lancador usa Claude Code.
 id = "opencode/muse-spark-1.3-contributor-free"
 provider = "opencode"
 

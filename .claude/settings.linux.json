@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "SessionStart": [
+      {"matcher": "", "hooks": [{"type": "command", "command": "\"${PAPIRO_PY:-python3}\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/papiro_hooks.py\" doctor"}]}
+    ],
+    "UserPromptSubmit": [
+      {"matcher": "", "hooks": [{"type": "command", "command": "\"${PAPIRO_PY:-python3}\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/papiro_hooks.py\" contexto"}]}
+    ],
+    "PreToolUse": [
+      {"matcher": "Write|Edit|MultiEdit|NotebookEdit|Bash|mcp__papiro__.*|mcp__papiro-seguranca__.*", "hooks": [{"type": "command", "command": "\"${PAPIRO_PY:-python3}\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/papiro_hooks.py\" guarda-originais"}]},
+      {"matcher": "mcp__papiro-seguranca__.*", "hooks": [{"type": "command", "command": "\"${PAPIRO_PY:-python3}\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/papiro_hooks.py\" confirma-sensivel"}]},
+      {"matcher": "WebFetch|WebSearch|Bash|mcp__papiro__capture|mcp__papiro__compose", "hooks": [{"type": "command", "command": "\"${PAPIRO_PY:-python3}\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/papiro_hooks.py\" soberania"}]}
+    ],
+    "PostToolUse": [
+      {"matcher": "mcp__papiro__.*|mcp__papiro-seguranca__.*", "hooks": [{"type": "command", "command": "\"${PAPIRO_PY:-python3}\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/papiro_hooks.py\" valida-saida"}]}
+    ],
+    "SubagentStop": [
+      {"matcher": "pdf-designer|pdf-compositor", "hooks": [{"type": "command", "command": "\"${PAPIRO_PY:-python3}\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/papiro_hooks.py\" pede-revisao"}]}
+    ],
+    "PreCompact": [
+      {"matcher": "", "hooks": [{"type": "command", "command": "\"${PAPIRO_PY:-python3}\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/papiro_hooks.py\" salva-estado"}]}
+    ],
+    "Stop": [
+      {"matcher": "", "hooks": [{"type": "command", "command": "\"${PAPIRO_PY:-python3}\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/papiro_hooks.py\" portao-final"}]}
+    ]
+  }
+}

@@ -1,145 +1,110 @@
 # -*- coding: utf-8 -*-
-"""CLI papiro - espelho da MCP §8 + comandos §7.3. Uso: python -m papiro_core.cli <cmd>."""
+"""CLI `papiro` (ADR-01): espelha as ferramentas MCP - mesmas funcoes, mesmo envelope, sem LLM.
+
+  papiro status
+  papiro ferramentas
+  papiro chamar <ferramenta> '<json de argumentos>'        # qualquer uma das 48
+  papiro inspecionar|ocr|otimizar|qa|comparar ...          # atalhos"""
 from __future__ import annotations
-import json, time, pathlib, shutil
+import json, sys
 import typer
-from rich import print as rprint
-from . import ROOT, new_job_id, job_dirs
-from .audit import envelope, err, out_entry
-from . import engines as ENG
-from .adapters import inspect as INS, pages as PAG, edit as ED, create as CRE
-from .adapters import convert as CONV, intel as INTEL
-from .adapters import qa as QA, compare as CMP
-from . import jobs as JOBS
+from . import OUT
+from . import mcp_seguranca as SEG, mcp_server as SRV
 
-app = typer.Typer(add_completion=False, help="PAPIRO SOBERANO - CLI espelho MCP")
+app = typer.Typer(add_completion=False, help="PAPIRO SOBERANO - CLI espelho do MCP (envelope JSON na saida)")
 
-def _job() -> tuple[str, pathlib.Path, pathlib.Path]:
-    jid = new_job_id()
-    w, o = job_dirs(jid)
-    return jid, w, o
+
+def _registro() -> dict:
+    ferr = {}
+    for modulo in (SRV, SEG):
+        for t in modulo.mcp._tool_manager.list_tools():
+            ferr[t.name if modulo is SRV else f"seguranca.{t.name}"] = t.fn
+    return ferr
+
+
+def _imprimir(env: dict) -> None:
+    typer.echo(json.dumps(env, ensure_ascii=False, indent=2, default=str))
+    if isinstance(env, dict) and env.get("ok") is False:
+        raise typer.Exit(1)
+
+
+def _out(out_dir: str) -> str:
+    if out_dir:
+        return out_dir
+    from datetime import date
+    return str(OUT / date.today().isoformat())
+
 
 @app.command()
 def status():
-    """Saude do ambiente (papiro-status)."""
-    st = ENG.status()
-    rprint(json.dumps({"perfil": ENG.perfil_hardware(), **st}, indent=2, ensure_ascii=False))
+    """Saude do ambiente: motores, versoes, idiomas do Tesseract e perfil (/papiro-status)."""
+    _imprimir(SRV.engines())
+
 
 @app.command()
-def inspecionar(arquivo: str):
-    """Nivel 0 RF-001..009."""
-    t0 = time.time()
-    jid, _w, o = _job()
-    p = pathlib.Path(arquivo)
-    if not p.exists():
-        rprint(json.dumps(envelope(jid, [], {"name": "n/a"}, 0, error=err("E_ENTRADA", f"nao existe: {arquivo}")), ensure_ascii=False))
-        raise typer.Exit(1)
+def ferramentas():
+    """Lista as ferramentas disponiveis (38 papiro + 10 seguranca)."""
+    for nome in sorted(_registro()):
+        typer.echo(nome)
+
+
+@app.command()
+def chamar(ferramenta: str, argumentos: str = typer.Argument("{}", help="JSON com os argumentos")):
+    """Chama qualquer ferramenta pelo nome com argumentos em JSON."""
+    reg = _registro()
+    if ferramenta not in reg:
+        typer.echo(f"ferramenta desconhecida: {ferramenta}", err=True)
+        raise typer.Exit(2)
     try:
-        rel = {"inventario": INS.inventario(p), "fontes": INS.fontes(p)[:50],
-               "imagens": INS.imagens(p)[:50], "paginas": INS.classifica_paginas(p),
-               "revisoes": INS.revisoes(p), "risco": INS.triagem_risco(p)}
-    except ValueError as e:
-        rprint(json.dumps(envelope(jid, [], {"name": "n/a"}, time.time() - t0, error=err("E_CORROMPIDO", str(e))), ensure_ascii=False))
-        raise typer.Exit(1)
-    f = o / "inspecao.json"
-    f.write_text(json.dumps(rel, indent=2, ensure_ascii=False), encoding="utf-8")
-    rprint(json.dumps(envelope(jid, [out_entry(f)], {"name": "pymupdf+pikepdf", "version": "1.27/9"}, time.time() - t0), ensure_ascii=False))
+        kwargs = json.loads(argumentos)
+    except json.JSONDecodeError as e:
+        typer.echo(f"JSON invalido: {e.msg}", err=True)
+        raise typer.Exit(2)
+    _imprimir(reg[ferramenta](**kwargs))
+
 
 @app.command()
-def merge(saida: str, entradas: list[str]):
-    """Junta PDFs com marcador por origem (RF-101)."""
-    t0 = time.time()
-    jid, _w, o = _job()
-    outs = o / pathlib.Path(saida).name
-    es = [pathlib.Path(e) for e in entradas]
-    for e in es:
-        if not e.exists():
-            rprint(json.dumps(envelope(jid, [], {}, 0, error=err("E_ENTRADA", f"nao existe: {e}")), ensure_ascii=False))
-            raise typer.Exit(1)
-    r = PAG.merge(es, outs)
-    qa = QA.run(outs)
-    (o / "qa-report.json").write_text(json.dumps({"job_id": jid, **qa}, indent=2, ensure_ascii=False), encoding="utf-8")
-    rprint(json.dumps(envelope(jid, [out_entry(outs, r["paginas"])], {"name": "pikepdf"}, time.time() - t0, qa=qa,
-                               error=None if qa["status"] == "APROVADO" else err("E_CONFORMIDADE", f"QA {qa['status']}: {qa['bloqueantes']}")), ensure_ascii=False))
+def inspecionar(arquivo: str, out_dir: str = ""):
+    """Nivel 0 completo (RF-001..009)."""
+    _imprimir(SRV.inspect("all", arquivo, _out(out_dir)))
+
 
 @app.command()
-def ocr_cmd(arquivo: str, saida: str, idioma: str = "por"):
-    """OCR RF-601 (comando papiro-ocr)."""
-    t0 = time.time()
-    jid, _w, o = _job()
-    p = pathlib.Path(arquivo)
-    out = o / pathlib.Path(saida).name
-    try:
-        r = INTEL.ocr(p, out, idioma)
-    except RuntimeError as e:
-        msg = str(e)
-        code = msg.split(":")[0] if msg.startswith("E_") else "E_MOTOR"
-        rprint(json.dumps(envelope(jid, [], {"name": "ocr"}, time.time() - t0, error=err(code, msg)), ensure_ascii=False))
-        raise typer.Exit(1)
-    qa = QA.run(out)
-    rprint(json.dumps(envelope(jid, [out_entry(out)], {"name": r.get("via", "ocr")}, time.time() - t0, qa=qa), ensure_ascii=False))
+def ocr(arquivo: str, out_dir: str = "", idioma: str = "por"):
+    """RF-601 com PDF/A (so paginas sem texto)."""
+    _imprimir(SRV.ocr(arquivo, _out(out_dir), idioma))
+
 
 @app.command()
-def criar(template_md: str, saida: str, titulo: str = ""):
-    """Cria PDF de Markdown (RF-301)."""
-    t0 = time.time()
-    jid, _w, o = _job()
-    md = pathlib.Path(template_md).read_text(encoding="utf-8") if pathlib.Path(template_md).exists() else template_md
-    out = o / pathlib.Path(saida).name
-    r = CRE.markdown_para_pdf(md, out, titulo)
-    qa = QA.run(out, eh_design=True)
-    (o / "qa-report.json").write_text(json.dumps({"job_id": jid, **qa}, indent=2, ensure_ascii=False), encoding="utf-8")
-    rprint(json.dumps(envelope(jid, [out_entry(out, r.get("paginas", 0))], {"name": r.get("via", "?")}, time.time() - t0, qa=qa), ensure_ascii=False))
+def otimizar(arquivo: str, out_dir: str = "", perfil: str = "email", linearizar: bool = False):
+    """RF-902/903."""
+    _imprimir(SRV.optimize(arquivo, _out(out_dir), perfil, linearizar=linearizar))
+
 
 @app.command()
-def otimizar_cmd(arquivo: str, saida: str, perfil: str = "email"):
-    """Compressao RF-902 + linearize RF-903."""
-    t0 = time.time()
-    jid, _w, o = _job()
-    out = o / pathlib.Path(saida).name
-    r = PAG.otimizar(pathlib.Path(arquivo), out, perfil)
-    qa = QA.run(out)
-    rprint(json.dumps(envelope(jid, [out_entry(out, r["paginas"])], {"name": "fitz"}, time.time() - t0, qa=qa), ensure_ascii=False))
+def criar(markdown: str, out_dir: str = "", titulo: str = "", saida: str = "documento.pdf"):
+    """RF-301: Markdown (arquivo ou texto) -> PDF com QA."""
+    from pathlib import Path
+    texto = Path(markdown).read_text(encoding="utf-8") if Path(markdown).is_file() else markdown
+    _imprimir(SRV.compose("auto", _out(out_dir), markdown=texto, titulo=titulo, saida=saida))
+
 
 @app.command()
-def comparar(a: str, b: str):
-    """Diff RF-607."""
-    t0 = time.time()
-    jid, _w, o = _job()
-    d = CMP.diff_texto(pathlib.Path(a), pathlib.Path(b))
-    s = CMP.fidelidade_ssim(pathlib.Path(a), pathlib.Path(b))
-    f = o / "comparacao.json"
-    f.write_text(json.dumps({"diff": d, "fidelidade": s}, indent=2, ensure_ascii=False), encoding="utf-8")
-    rprint(json.dumps(envelope(jid, [out_entry(f)], {"name": "difflib+ssim"}, time.time() - t0), ensure_ascii=False))
+def qa(arquivo: str, out_dir: str = "", design: bool = False, nota_visual: float = typer.Option(None),
+       padrao: str = ""):
+    """Portoes G1-G11."""
+    _imprimir(SRV.qa_run(arquivo, _out(out_dir), design=design, nota_visual=nota_visual, padrao=padrao))
+
 
 @app.command()
-def tarjar_cmd(arquivo: str, saida: str, caixas_json: str):
-    """Tarja real RF-808. caixas_json='[{\"pagina\":1,\"x0\":..}]'."""
-    import json as j
-    t0 = time.time()
-    jid, _w, o = _job()
-    out = o / pathlib.Path(saida).name
-    caixas = j.loads(caixas_json)
-    r = ED.tarjar(pathlib.Path(arquivo), out, caixas)
-    qa = QA.run(out)
-    rprint(json.dumps(envelope(jid, [out_entry(out, r["paginas"])], {"name": "fitz-redact"}, time.time() - t0, qa=qa), ensure_ascii=False))
+def comparar(a: str, b: str, out_dir: str = ""):
+    """RF-607."""
+    _imprimir(SRV.compare(a, b, _out(out_dir)))
 
-@app.command()
-def receita(acao: str, arquivo: str = ""):
-    """Gestao receitas: validar|mostrar."""
-    import yaml
-    p = pathlib.Path(arquivo)
-    if acao == "validar":
-        rec = yaml.safe_load(p.read_text(encoding="utf-8"))
-        erros = JOBS.validar_receita(rec)
-        rprint(json.dumps({"valida": not erros, "erros": erros}, ensure_ascii=False))
-    elif acao == "mostrar":
-        rprint(p.read_text(encoding="utf-8"))
-    else:
-        rprint("uso: receita validar|mostrar <arquivo>")
 
 def app_run():
     app()
 
-if __name__ == "__main__":
-    app()
+
+if __name__ == "__main__":  # pragma: no cover
+    app(sys.argv[1:])

@@ -1,1 +1,0 @@
-{"audit_id": "30a265782687", "ts": "2026-09-16T16:42:06-03:00", "job_id": "2026-09-16-0001", "engine": {"name": "pymupdf+pikepdf", "version": "1.27/9"}, "outputs": [{"path": "C:\\PAPIRO\\out\\2026-09-16\\0001\\inspecao.json", "sha256": "7786b1aba4b1944a2a93b0b834b8ae0b25ef5a5b18bdc9584df27eda96ffbd15", "pages": 0, "bytes": 1362}], "warnings": [], "error": null}

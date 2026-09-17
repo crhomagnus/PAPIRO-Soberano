@@ -1,12 +1,12 @@
 ---
+name: pdf-sentinela
 description: "Sentinela mensal: versoes, benchmarks, CVEs. So propoe, nunca atualiza sozinho."
-mode: subagent
+tools: WebSearch, WebFetch, Read
+disallowedTools: Write, Edit, NotebookEdit
 model: sonnet
-temperature: 0.1
-permission:
-  edit: deny
-  bash: allow
-color: info
+effort: medium
+memory: project
+color: gray
 ---
 
 # pdf-sentinela

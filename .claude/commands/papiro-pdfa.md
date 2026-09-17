@@ -1,9 +1,10 @@
 ---
-description: "Converter+validar RF-801: ` /papiro-pdfa <arquivo> [1b|2b|2u|3b|3u|4|4f] ` veraPDF zero-falha."
+description: "Converter e validar PDF/A (RF-801)."
+argument-hint: "<arquivo> [PDF/A-2b|2u|3b|...]"
 ---
 
 # /papiro-pdfa
 
-Converter+validar RF-801: ` /papiro-pdfa <arquivo> [1b|2b|2u|3b|3u|4|4f] ` veraPDF zero-falha.
-
-Orquestrador: papiro-soberano. Modelo: opencode/muse-spark-1.3-contributor-free. Exige QA G1-G11 antes de entregar.
+1. `inspect op=fonts` e `inspect op=risk` (JavaScript e anexos impedem PDF/A-2).
+2. `conform op=pdfa entrada=<arquivo> padrao=<nível, padrão PDF/A-2b>` → só entrega se o veraPDF aprovar.
+3. Se reprovar, leia `error.message`/regras, corrija (`fonts op=embed`, `sanitize` via pdf-seguranca) e repita.

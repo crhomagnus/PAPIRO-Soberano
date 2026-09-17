@@ -5,7 +5,8 @@
     "UserPromptSubmit": [{ "matcher": "", "hooks": [{ "type": "command", "shell": "powershell", "command": "& C:\\PAPIRO\\.claude\\hooks\\contexto.ps1" }] }],
     "PreToolUse": [
       { "matcher": "Write|Edit|PowerShell|mcp__papiro__.*", "hooks": [{ "type": "command", "shell": "powershell", "command": "& C:\\PAPIRO\\.claude\\hooks\\guarda-originais.ps1" }] },
-      { "matcher": "mcp__papiro-seguranca__.*", "hooks": [{ "type": "command", "shell": "powershell", "command": "& C:\\PAPIRO\\.claude\\hooks\\confirma-sensivel.ps1" }] }
+      { "matcher": "mcp__papiro-seguranca__.*", "hooks": [{ "type": "command", "shell": "powershell", "command": "& C:\\PAPIRO\\.claude\\hooks\\confirma-sensivel.ps1" }] },
+      { "matcher": "WebFetch|WebSearch|PowerShell|mcp__papiro__capture|mcp__papiro__compose", "hooks": [{ "type": "command", "shell": "powershell", "command": "& C:\\PAPIRO\\.claude\\hooks\\soberania.ps1" }] }
     ],
     "PostToolUse": [{ "matcher": "", "hooks": [{ "type": "command", "shell": "powershell", "command": "& C:\\PAPIRO\\.claude\\hooks\\valida-saida.ps1" }] }],
     "SubagentStop": [{ "matcher": "pdf-designer|pdf-compositor", "hooks": [{ "type": "command", "shell": "powershell", "command": "& C:\\PAPIRO\\.claude\\hooks\\pede-revisao.ps1" }] }],

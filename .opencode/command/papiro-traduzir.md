@@ -1,9 +1,10 @@
 ---
-description: "Traducao RF-608 <arquivo> <idioma> preservando layout via PDFMathTranslate+Ollama."
+description: "Tradução preservando layout (RF-608)."
+argument-hint: "<arquivo> <idioma>"
 ---
 
 # /papiro-traduzir
 
-Traducao RF-608 <arquivo> <idioma> preservando layout via PDFMathTranslate+Ollama.
-
-Orquestrador: papiro-soberano. Modelo: opencode/muse-spark-1.3-contributor-free. Exige QA G1-G11 antes de entregar.
+`translate` devolve E_SEM_SUPORTE: PDFMathTranslate/BabelDOC não estão instalados. Diga isso ao usuário e ofereça
+tradução do texto extraído (`convert destino=md`) recomposto com `compose`, avisando que o layout original não é
+preservado.

@@ -1,50 +1,39 @@
 # -*- coding: utf-8 -*-
-"""Auditoria JSONL + envelope padrao PRD §8.1/§8.2."""
+"""Trilha de auditoria JSONL (RNF-13). PRD §12.5: so hashes e metadados tecnicos, nunca conteudo
+nem caminho/nome de arquivo (nomes podem conter dado pessoal)."""
 from __future__ import annotations
-import json, time, uuid, pathlib
-from typing import Any
+import json, pathlib, uuid
 from . import LOGS, sha256_file, utcnow_iso
+from .erros import err  # noqa: F401  (reexportado para compatibilidade)
 
 AUDIT = LOGS / "audit.jsonl"
 
-ERRORS = {
-    "E_ENTRADA": "Arquivo ausente ou caminho fora da raiz",
-    "E_SENHA": "PDF criptografado sem senha informada",
-    "E_CORROMPIDO": "Nenhum parser abriu o arquivo",
-    "E_MOTOR": "Motor falhou",
-    "E_TEMPO": "Timeout",
-    "E_CONFORMIDADE": "Validador reprovou",
-    "E_POLITICA": "Hook ou regra bloqueou",
-    "E_SEM_SUPORTE": "Recurso impossivel no motor",
-}
 
-def audit(entry: dict) -> str:
+def registrar(entrada: dict) -> str:
     aid = uuid.uuid4().hex[:12]
-    entry = {"audit_id": aid, "ts": utcnow_iso(), **entry}
+    linha = {"audit_id": aid, "ts": utcnow_iso(), **entrada}
+    AUDIT.parent.mkdir(parents=True, exist_ok=True)
     with open(AUDIT, "a", encoding="utf-8") as f:
-        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        f.write(json.dumps(linha, ensure_ascii=False) + "\n")
     return aid
 
-def envelope(job_id: str, outputs: list[dict], engine: dict, seconds: float,
-             warnings: list[str] | None = None, qa: dict | None = None,
-             error: dict | None = None) -> dict:
-    return {
-        "ok": error is None,
-        "job_id": job_id,
-        "outputs": outputs,
-        "engine": engine,
-        "metrics": {"seconds": round(seconds, 3)},
-        "warnings": warnings or [],
-        "qa": qa or {},
-        "audit_id": audit({"job_id": job_id, "engine": engine, "outputs": outputs,
-                           "warnings": warnings or [], "error": error}),
-        **({"error": error} if error else {}),
-    }
 
-def err(code: str, message: str = "") -> dict:
-    base = ERRORS.get(code, message)
-    return {"code": code, "message": message or base}
+def paginas_pdf(p: pathlib.Path) -> int:
+    if p.suffix.lower() != ".pdf":
+        return 0
+    try:
+        import fitz
+        with fitz.open(p) as d:
+            return d.page_count
+    except Exception:
+        return 0
 
-def out_entry(path: pathlib.Path, pages: int = 0) -> dict:
-    return {"path": str(path), "sha256": sha256_file(path),
-            "pages": pages, "bytes": path.stat().st_size}
+
+def descrever(p: pathlib.Path) -> dict:
+    """Entrada de `outputs` do envelope (§8.1)."""
+    return {"path": str(p), "sha256": sha256_file(p), "pages": paginas_pdf(p), "bytes": p.stat().st_size}
+
+
+def para_log(descricoes: list[dict]) -> list[dict]:
+    return [{"sha256": d["sha256"], "pages": d["pages"], "bytes": d["bytes"],
+             "ext": pathlib.Path(d["path"]).suffix.lower()} for d in descricoes]

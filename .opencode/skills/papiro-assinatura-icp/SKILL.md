@@ -1,11 +1,50 @@
 ---
 name: papiro-assinatura-icp
-description: Fluxo PAdES ICP-Brasil A1/A3 + ITI. SO-USUARIO (disable-model-invocation: true).
+description: "Fluxo PAdES ICP-Brasil A1/A3 e validação ITI no PAPIRO. SÓ O USUÁRIO invoca."
 disable-model-invocation: true
 ---
 
-# Skill papiro-assinatura-icp
+# papiro-assinatura-icp
 
-Fluxo PAdES ICP-Brasil A1/A3 + ITI. SO-USUARIO (disable-model-invocation: true).
+## Fluxo e requisitos (PRD §12 e §12.1)
+```mermaid
+sequenceDiagram
+  participant U as Márcio
+  participant S as pdf-seguranca
+  participant H as pyHanko
+  participant T as Token A3
+  S->>U: Resumo do documento e pedido de confirmação
+  U->>S: Confirma
+  S->>H: sign (PAdES)
+  H->>T: Assinar hash (PIN digitado no ato)
+  T-->>H: Assinatura
+  H-->>S: PDF assinado
+  S->>H: verify com cadeia ICP-Brasil
+  S-->>U: PDF + relatório de validação
+```
 
-Fonte canonica: docs/PAPIRO_PRD_ORIGINAL.md §7.2 + docs/AGENTE_AUTONOMO_ENGENHARIA_PDF.md.
+A verificação de rotina é local; nenhum documento de paciente é enviado a validador on-line.
+
+| Aspecto | Especificação |
+| --- | --- |
+| Certificados | A1 em arquivo PFX e A3 em token ou cartão via PKCS#11. O certificado é pré-requisito do usuário, não uma ferramenta do PAPIRO |
+| Perfil padrão | PAdES-B-B; B-T quando houver TSA configurada; B-LTA para arquivo de longo prazo |
+| Carimbo do tempo | TSA RFC 3161 configurável. Carimbo de ACT credenciada na ICP-Brasil pode ter custo e fica opcional |
+| Âncoras de confiança | Cadeia das ACs ICP-Brasil carregada no validador local |
+| Aparência visível | Nome, CRM, data e hora, QR de validação; nunca sobre o conteúdo |
+| Certificação | DocMDP que permite só preenchimento e novas assinaturas |
+| Política de assinatura | Suporte a atributos CAdES de política; spike técnico confirma se o validador do ITI exige política explícita |
+| Fallback para A3 | JSignPdf usando o repositório de certificados do Windows |
+| Homologação | A cada troca de certificado ou versão do pyHanko, um documento de teste sem dados de paciente é conferido nos validadores do ITI e do CFM |
+| Proibições | Assinar sem confirmação; gravar PIN ou senha; assinar documento reprovado nos portões |
+
+## Ferramenta real (servidor papiro-seguranca, só no subagente pdf-seguranca)
+`sign entrada=... out_dir=... pfx=<arquivo .pfx> senha_ref="env:NOME" | "keyring:servico/usuario" confirm=true
+ visivel=true caixa="x0,y0,x1,y1" crm="00000-UF"` → PAdES-B-B, SHA-256, verificação local logo após assinar.
+- A senha NUNCA vai como argumento: só referência a variável de ambiente ou chaveiro.
+- Documento reprovado nos portões não é assinado (E_POLITICA). Aparência sobre conteúdo é recusada.
+- `certify` = DocMDP (permite só preenchimento e novas assinaturas).
+- Sem suporte ainda: A3/PKCS#11, carimbo do tempo (TSA), LTV B-LT/B-LTA, JSignPdf.
+- Homologação: a cada troca de certificado, conferir um documento de teste sem dados de paciente no validar.iti.gov.br.
+
+Fonte canônica: `docs/PAPIRO_PRD_ORIGINAL.md` (trechos acima copiados verbatim) e `docs/AGENTE_AUTONOMO_ENGENHARIA_PDF.md`. Ferramentas do MCP `papiro` respondem no envelope §8.1 (`ok`, `job_id`, `outputs`, `engine`, `qa`, `error`). Nunca declarar sucesso com `ok=false`.
