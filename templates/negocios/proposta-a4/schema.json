@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Proposta",
+  "type": "object",
+  "required": [
+    "empresa",
+    "cliente",
+    "numero",
+    "validade_dias",
+    "itens"
+  ],
+  "properties": {
+    "empresa": {
+      "type": "object",
+      "required": [
+        "nome"
+      ],
+      "properties": {
+        "nome": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cnpj": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contato": {
+          "type": "string",
+          "minLength": 1
+        },
+        "responsavel": {
+          "type": "string",
+          "minLength": 1
+        },
+        "logo": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "cliente": {
+      "type": "object",
+      "required": [
+        "nome"
+      ],
+      "properties": {
+        "nome": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contato": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "numero": {
+      "type": "string",
+      "minLength": 1
+    },
+    "data": {
+      "type": "string",
+      "pattern": "^\\d{2}/\\d{2}/\\d{4}$"
+    },
+    "validade_dias": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 365
+    },
+    "apresentacao": {
+      "type": "string",
+      "minLength": 1
+    },
+    "itens": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "descricao",
+          "quantidade",
+          "valor_unitario"
+        ],
+        "properties": {
+          "descricao": {
+            "type": "string",
+            "minLength": 1
+          },
+          "quantidade": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "valor_unitario": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "prazo_entrega": {
+      "type": "string",
+      "minLength": 1
+    },
+    "condicoes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

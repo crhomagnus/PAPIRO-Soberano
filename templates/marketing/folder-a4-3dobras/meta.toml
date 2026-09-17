@@ -1,0 +1,10 @@
+nome = "Folder 3 dobras"
+descricao = "Folder A4 paisagem de três dobras, face externa e interna."
+categoria = "marketing"
+papel = "A4 paisagem"
+design = true
+padroes = []
+titulo = "{capa.titulo}"
+autor_campo = "capa.titulo"
+sensivel = false
+notas = []

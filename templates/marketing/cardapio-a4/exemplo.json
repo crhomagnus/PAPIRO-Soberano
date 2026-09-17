@@ -1,0 +1,67 @@
+{
+  "estabelecimento": "Bistrô Exemplo",
+  "subtitulo": "Cozinha de estação (cardápio fictício)",
+  "secoes": [
+    {
+      "nome": "Entradas",
+      "itens": [
+        {
+          "nome": "Pão de fermentação natural",
+          "preco": 18,
+          "descricao": "Manteiga da casa"
+        },
+        {
+          "nome": "Salada de folhas",
+          "preco": 29,
+          "descricao": "Vinagrete de mostarda"
+        }
+      ]
+    },
+    {
+      "nome": "Principais",
+      "itens": [
+        {
+          "nome": "Risoto de cogumelos",
+          "preco": 64,
+          "descricao": "Parmesão e salsa"
+        },
+        {
+          "nome": "Peixe grelhado",
+          "preco": 78,
+          "descricao": "Purê de mandioquinha"
+        },
+        {
+          "nome": "Massa ao sugo",
+          "preco": 52
+        }
+      ]
+    },
+    {
+      "nome": "Sobremesas",
+      "itens": [
+        {
+          "nome": "Pudim de leite",
+          "preco": 22
+        },
+        {
+          "nome": "Sorvete artesanal",
+          "preco": 19
+        }
+      ]
+    },
+    {
+      "nome": "Bebidas",
+      "itens": [
+        {
+          "nome": "Suco natural",
+          "preco": 14
+        },
+        {
+          "nome": "Água mineral",
+          "preco": 7
+        }
+      ]
+    }
+  ],
+  "observacoes": "Preços fictícios. Informe alergias à equipe."
+}

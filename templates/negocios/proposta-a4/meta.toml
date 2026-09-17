@@ -1,0 +1,10 @@
+nome = "Proposta comercial"
+descricao = "Proposta A4 com itens, total calculado, validade e condições."
+categoria = "negocios"
+papel = "A4"
+design = false
+padroes = []
+titulo = "Proposta comercial {numero}"
+autor_campo = "empresa.nome"
+sensivel = false
+notas = []

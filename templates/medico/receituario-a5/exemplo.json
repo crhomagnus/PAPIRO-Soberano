@@ -1,0 +1,34 @@
+{
+  "medico": {
+    "nome": "Dra. Helena Exemplo (fictícia)",
+    "crm": "00000",
+    "uf": "RS",
+    "rqe": "00000",
+    "especialidade": "Clínica Médica",
+    "endereco": "Rua Fictícia, 100 — Centro, Santa Maria/RS",
+    "telefone": "(55) 3000-0000",
+    "email": "contato@exemplo.invalid"
+  },
+  "paciente": {
+    "nome": "Paciente Fictício de Exemplo",
+    "endereco": "Av. Imaginária, 200 — Santa Maria/RS"
+  },
+  "tipo": "simples",
+  "itens": [
+    {
+      "medicamento": "Dipirona monoidratada 500 mg",
+      "posologia": "Tomar 1 comprimido por via oral a cada 6 horas, se dor ou febre, por até 3 dias.",
+      "quantidade": 10,
+      "unidade": "comprimidos"
+    },
+    {
+      "medicamento": "Soro fisiológico 0,9% 500 mL",
+      "posologia": "Lavagem nasal com 5 mL em cada narina, 3 vezes ao dia.",
+      "quantidade": 1,
+      "unidade": "frasco"
+    }
+  ],
+  "orientacoes": "Hidratação oral abundante. Retornar se febre persistir por mais de 72 horas.",
+  "local": "Santa Maria",
+  "data": "17/09/2026"
+}

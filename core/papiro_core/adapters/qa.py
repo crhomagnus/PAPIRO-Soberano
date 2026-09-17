@@ -197,13 +197,20 @@ def _g8(arq: pathlib.Path, meta_mb: float | None) -> dict:
 
 
 def _g9(arq: pathlib.Path, padrao: str | None) -> dict:
-    if not padrao:
+    """Um ou mais padroes separados por virgula ('PDF/A-2b,PDF/UA-1'): todos precisam passar."""
+    padroes = [x.strip() for x in (padrao or "").split(",") if x.strip()]
+    if not padroes:
         return {"ok": True, "det": "nao se aplica (nenhum padrao declarado)", "aplica": False}
-    try:
-        r = CONF.validar_padrao(arq, padrao)
-        return {"ok": r["ok"], "aplica": True, "det": {k: v for k, v in r.items() if k != "ok"}}
-    except PapiroErro as e:
-        return {"ok": False, "aplica": True, "det": f"{e.codigo}: {e.mensagem}"}
+    resultados, ok = {}, True
+    for p in padroes:
+        try:
+            r = CONF.validar_padrao(arq, p)
+            resultados[p] = {k: v for k, v in r.items() if k != "ok"} | {"ok": r["ok"]}
+            ok &= bool(r["ok"])
+        except PapiroErro as e:
+            resultados[p] = f"{e.codigo}: {e.mensagem}"
+            ok = False
+    return {"ok": ok, "aplica": True, "det": resultados}
 
 
 def _g10(arq: pathlib.Path, anexos_permitidos: bool) -> dict:

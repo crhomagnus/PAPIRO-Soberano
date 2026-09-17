@@ -1,0 +1,10 @@
+nome = "Pedido de exame"
+descricao = "Solicitação de exames A5 com código e indicação clínica."
+categoria = "medico"
+papel = "A5"
+design = false
+padroes = ["a-2b", "ua-1"]
+titulo = "Solicitação de exames"
+autor_campo = "medico.nome"
+sensivel = true
+notas = []

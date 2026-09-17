@@ -1,0 +1,27 @@
+# Brand kit padrao do PAPIRO (formato PRD §10.1). Fontes: so as de fonts/ (OFL, fsType 0).
+# Uma marca nova vive em brandkits/<marca>/tokens.yaml com a mesma estrutura; logos relativos a esta pasta.
+marca: padrao
+cores:
+  primaria: "#0F4C81"
+  acento: "#F2A900"
+  texto: "#1B1B1F"
+  fundo: "#FFFFFF"
+  suave: "#EEF3F8"
+  linha: "#C9D3DD"
+  texto_suave: "#5A6570"
+  cmyk:
+    primaria: [100, 60, 0, 30]
+tipografia:
+  titulo: {familia: Liberation Sans, pesos: [400, 700]}
+  texto: {familia: Liberation Serif, pesos: [400, 700]}
+  mono: {familia: Liberation Mono}
+  escala: 1.25
+  corpo_pt: 10.5
+  entrelinha: 1.4
+grid:
+  pagina: A4
+  margens_mm: [20, 18, 22, 18]
+  colunas: 12
+  gutter_mm: 4
+  linha_base_pt: 14.7
+logos: {}

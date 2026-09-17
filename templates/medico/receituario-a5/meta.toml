@@ -1,0 +1,10 @@
+nome = "Receituário"
+descricao = "Receituário A5 simples ou de controle especial (duas vias)."
+categoria = "medico"
+papel = "A5"
+design = false
+padroes = ["a-2b", "ua-1"]
+titulo = "Receituário médico"
+autor_campo = "medico.nome"
+sensivel = true
+notas = ["Controle especial: Portaria SVS/MS 344/1998, art. 52 (duas vias com os dizeres de destino; quantidade em algarismos e por extenso; validade de 30 dias para listas C1 e C5) — texto conferido em 17/09/2026 na cópia oficial da SES-DF.", "Blocos de identificação do comprador e do fornecedor seguem o art. 36 (Notificação de Receita); o modelo gráfico do ANEXO XVII não foi conferido."]

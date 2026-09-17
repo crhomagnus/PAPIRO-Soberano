@@ -1,0 +1,42 @@
+{
+  "titulo": "Fundamentos de PDF",
+  "subtitulo": "Apostila introdutória (exemplo)",
+  "autor": "Equipe de Exemplo",
+  "instituicao": "Escola Fictícia",
+  "capitulos": [
+    {
+      "titulo": "O que é um PDF",
+      "introducao": "Neste capítulo de exemplo apresentamos o formato.",
+      "secoes": [
+        {
+          "titulo": "Estrutura",
+          "paragrafos": [
+            "Um PDF é composto por objetos, páginas e recursos.",
+            "Texto fictício para demonstrar a diagramação."
+          ]
+        },
+        {
+          "titulo": "Fontes",
+          "paragrafos": [
+            "Fontes embutidas garantem a mesma aparência em qualquer leitor."
+          ]
+        }
+      ],
+      "exercicios": [
+        "Explique o papel das fontes embutidas.",
+        "Liste três objetos de um PDF."
+      ]
+    },
+    {
+      "titulo": "Padrões ISO",
+      "secoes": [
+        {
+          "titulo": "PDF/A e PDF/UA",
+          "paragrafos": [
+            "PDF/A garante preservação; PDF/UA, acessibilidade."
+          ]
+        }
+      ]
+    }
+  ]
+}

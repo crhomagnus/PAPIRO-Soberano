@@ -383,22 +383,43 @@ def metadata(entrada: str, out_dir: str, titulo: str = "", autor: str = "", assu
 @mcp.tool()
 def compose(motor: str, out_dir: str, markdown: str = "", html: str = "", titulo: str = "", autor: str = "PAPIRO",
             idioma: str = "pt-BR", padroes: str = "", saida: str = "documento.pdf", design: bool = False,
-            nota_visual: float | None = None, qa: bool = True, dry_run: bool = False) -> dict:
-    """RF-301/302. motor=auto|typst|story (markdown) ou html (Chromium, tags e marcadores).
-    padroes='a-2b,ua-1' exige Typst e valida no veraPDF."""
+            nota_visual: float | None = None, template: str = "", dados_json: str = "", dados_arquivo: str = "",
+            marca: str = "padrao", usar_exemplo: bool = False, qa: bool = True, dry_run: bool = False) -> dict:
+    """RF-301/302/307. motor=auto|typst|story (markdown) ou html (Chromium). template = um dos 16 de RF-307
+    (ex.: medico/receituario-a5; ver recurso papiro://templates) com dados_json/dados_arquivo validados no schema;
+    marca = brand kit de brandkits/. padroes='a-2b,ua-1' valida no veraPDF."""
     lista_padroes = [p.strip() for p in padroes.split(",") if p.strip()]
 
     def acao(ctx):
+        from . import templates as TP
+        if template:
+            if motor not in ("auto", "typst"):
+                raise PapiroErro("E_ENTRADA", "templates RF-307 usam Typst (motor auto ou typst)")
+            m = TP.meta(template)
+            if usar_exemplo:
+                dados = TP.exemplo(m["id"])
+            elif dados_arquivo:
+                dados = json.loads(ctx.entradas[0].read_text(encoding="utf-8"))
+            else:
+                try:
+                    dados = json.loads(dados_json or "")
+                except json.JSONDecodeError:
+                    raise PapiroErro("E_ENTRADA", "informe dados_json valido, dados_arquivo (.json) ou usar_exemplo=true")
+            out = ctx.saida(saida if saida != "documento.pdf" else m["id"].split("/")[-1] + ".pdf")
+            r = TP.renderizar(m["id"], dados, out, marca=marca, padroes=lista_padroes or None, idioma=idioma)
+            res = Resultado(outputs=[out], motor="typst", dados={k: r[k] for k in ("template", "paginas", "padroes", "titulo", "marca")})
+            padrao = ",".join("PDF/" + p.upper() for p in r["padroes"] if p.lower().startswith(("a-", "ua-"))) or None
+            return _com_qa(ctx, res, out, qa, eh_design=design or r["design"], nota_visual=nota_visual, padrao=padrao)
         out = ctx.saida(saida)
         if motor == "html":
             r = CRE.html_para_pdf(html or markdown, out, titulo, autor, idioma)
         else:
             r = CRE.markdown_para_pdf(markdown, out, titulo, autor, idioma, motor, lista_padroes or None)
         res = Resultado(outputs=[out], motor=r["via"], fallback_from=r.get("fallback_from"), dados={"paginas": r["paginas"]})
-        padrao = next((("PDF/" + p.upper()) for p in lista_padroes if p.lower().startswith(("a-", "ua-"))), None)
+        padrao = ",".join("PDF/" + p.upper() for p in lista_padroes if p.lower().startswith(("a-", "ua-"))) or None
         return _com_qa(ctx, res, out, qa, eh_design=design, nota_visual=nota_visual, padrao=padrao)
-    return executar("compose", motor, acao, out_dir=out_dir, tarefa="criacao_html" if motor == "html" else "criacao",
-                    dry_run=dry_run)
+    return executar("compose", template or motor, acao, entradas=[dados_arquivo] if (template and dados_arquivo) else [],
+                    out_dir=out_dir, tarefa="criacao_html" if motor == "html" else "criacao", dry_run=dry_run)
 
 
 @mcp.tool()
@@ -421,15 +442,59 @@ def office_to_pdf(entrada: str, out_dir: str, referencia: str = "", qa: bool = T
 
 
 @mcp.tool()
-def mail_merge(out_dir: str, markdown_tpl: str, dados_json: str = "", dados_arquivo: str = "",
-               modo: str = "consolidado", campo_nome: str = "", titulo: str = "Mala direta", qa: bool = True,
-               dry_run: bool = False) -> dict:
-    """RF-304: modelo Markdown com {{campo}} + dados JSON/CSV/XLSX; modo=consolidado|um_por_registro."""
+def mail_merge(out_dir: str, markdown_tpl: str = "", dados_json: str = "", dados_arquivo: str = "",
+               modo: str = "consolidado", campo_nome: str = "", titulo: str = "Mala direta", template: str = "",
+               marca: str = "padrao", qa: bool = True, dry_run: bool = False) -> dict:
+    """RF-304: dados JSON/CSV/XLSX aplicados a um modelo Markdown com {{campo}} ou a um template RF-307
+    (cada registro validado no schema); modo=consolidado|um_por_registro."""
     def acao(ctx):
         registros = CRE.carregar_dados(ctx.entradas[0] if dados_arquivo else dados_json)
-        r = CRE.mala_direta(markdown_tpl, registros, ctx.out_dir, modo, titulo, campo_nome=campo_nome)
-        res = Resultado(outputs=list(r["saidas"]), motor=r["via"], dados={"registros": r["registros"], "arquivos": len(r["saidas"])})
-        return _com_qa(ctx, res, r["saidas"][0], qa)
+        if not template:
+            if not markdown_tpl:
+                raise PapiroErro("E_ENTRADA", "informe markdown_tpl ou template")
+            r = CRE.mala_direta(markdown_tpl, registros, ctx.out_dir, modo, titulo, campo_nome=campo_nome)
+            res = Resultado(outputs=list(r["saidas"]), motor=r["via"], dados={"registros": r["registros"], "arquivos": len(r["saidas"])})
+            return _com_qa(ctx, res, r["saidas"][0], qa)
+        import fitz
+        from . import templates as TP
+        m = TP.meta(template)
+        if modo not in ("consolidado", "um_por_registro"):
+            raise PapiroErro("E_ENTRADA", "modo deve ser consolidado ou um_por_registro")
+        saidas, avisos = [], []
+        for i, reg in enumerate(registros, start=1):
+            try:
+                TP.validar(m["id"], reg)
+            except PapiroErro as e:
+                raise PapiroErro("E_ENTRADA", f"registro {i}: {e.mensagem}")
+        if modo == "um_por_registro":
+            for i, reg in enumerate(registros, start=1):
+                base = nome_seguro(str(reg.get(campo_nome, "")) if campo_nome else "", f"registro-{i:05d}")
+                out = ctx.saida(f"{base}.pdf")
+                TP.renderizar(m["id"], reg, out, marca=marca)
+                saidas.append(out)
+            padrao = ",".join("PDF/" + p.upper() for p in m.get("padroes", [])) or None
+        else:
+            final = fitz.open()
+            with __import__("tempfile").TemporaryDirectory() as t:
+                for i, reg in enumerate(registros, start=1):
+                    parte = pathlib.Path(t) / f"{i:05d}.pdf"
+                    TP.renderizar(m["id"], reg, parte, marca=marca, padroes=[])
+                    with fitz.open(parte) as d:
+                        final.insert_pdf(d)
+                        if i == 1:
+                            meta_pdf = d.metadata
+            out = ctx.saida(m["id"].split("/")[-1] + "-lote.pdf")
+            final.set_metadata({**meta_pdf, "title": f"{titulo} ({len(registros)} registros)"})
+            final.set_language("pt-BR")
+            final.save(out, garbage=3, deflate=True)
+            final.close()
+            saidas.append(out)
+            padrao = None
+            if m.get("padroes"):
+                avisos.append("lote consolidado sai sem PDF/A e PDF/UA; para conformidade use modo um_por_registro")
+        res = Resultado(outputs=saidas, motor="typst", warnings=avisos,
+                        dados={"registros": len(registros), "arquivos": len(saidas), "template": m["id"]})
+        return _com_qa(ctx, res, saidas[0], qa, eh_design=bool(m.get("design")), padrao=padrao)
     return executar("mail_merge", modo, acao, entradas=[dados_arquivo] if dados_arquivo else [], out_dir=out_dir,
                     tarefa="mala_direta", dry_run=dry_run)
 
@@ -655,12 +720,13 @@ def conform(op: str, entrada: str, out_dir: str, padrao: str = "PDF/A-2b", qa: b
 
 @mcp.tool()
 def validate(entrada: str, out_dir: str, padrao: str = "", dry_run: bool = False) -> dict:
-    """Validacao independente: integridade (qpdf + pdfcpu) e, se padrao informado, veraPDF (A/UA) ou preflight (X)."""
+    """Validacao independente: integridade (qpdf + pdfcpu) e padroes (virgula) no veraPDF (A/UA) ou preflight (X)."""
     def acao(ctx):
         d = {"integridade": QA._g1(ctx.entradas[0])}
-        if padrao:
-            d["padrao"] = CONF.validar_padrao(ctx.entradas[0], padrao)
-        ok = d["integridade"]["ok"] and d.get("padrao", {}).get("ok", True)
+        padroes = [x.strip() for x in padrao.split(",") if x.strip()]
+        if padroes:
+            d["padroes"] = {p: CONF.validar_padrao(ctx.entradas[0], p) for p in padroes}
+        ok = d["integridade"]["ok"] and all(r["ok"] for r in d.get("padroes", {}).values())
         res = Resultado(outputs=[_json(ctx, "validacao.json", d)], motor="qpdf+pdfcpu" + ("+verapdf" if padrao else ""),
                         dados={"valido": ok, **d})
         if not ok:
@@ -807,41 +873,87 @@ def jobs(op: str, job_id: str = "", pedido: str = "", limite: int = 20) -> dict:
     return executar("jobs", op, acao, escreve=False)
 
 
-RECEITA_SCHEMA = {
-    "type": "object", "required": ["receita", "versao", "passos"],
-    "properties": {
-        "receita": {"type": "string", "minLength": 1}, "versao": {"type": "integer", "minimum": 1},
-        "descricao": {"type": "string"}, "sensivel": {"type": "boolean"}, "entradas": {"type": "object"},
-        "passos": {"type": "array", "minItems": 1, "items": {
-            "type": "object", "required": ["id", "ferramenta"],
-            "properties": {"id": {"type": "string"}, "ferramenta": {"type": "string"}, "com": {"type": "object"},
-                           "exige": {"type": "object"}, "confirmacao": {"enum": ["obrigatoria", "opcional"]},
-                           "se": {"type": "string"}, "para_cada": {"type": "string"}, "paralelo": {"type": "integer"}}}},
-        "saida": {"type": "object"}}}
-
-
 @mcp.tool()
-def recipes(op: str, out_dir: str = "", arquivo: str = "") -> dict:
-    """§9.3. op=list | validate (JSON Schema). run: sem suporte nesta versao (executor de receitas pendente)."""
+def recipes(op: str, out_dir: str = "", arquivo: str = "", dados_json: str = "", dados_arquivo: str = "",
+            execucao: str = "", confirmados: str = "", externos_json: str = "", job_ids: str = "", nome: str = "",
+            dry_run: bool = False) -> dict:
+    """§9.3 receitas YAML. op=list | validate (arquivo) | run (arquivo + dados; checkpoints, cache por hash, exige,
+    se/para_cada/paralelo, confirmacao) | status (execucao) | cancel (execucao) | save (job_ids + nome; RF-908).
+    Retomar: run com execucao=<id>, confirmados='passo1,passo2' e externos_json com a saida dos passos papiro-seguranca."""
+    from . import receitas as REC
+    entradas = [x for x in (arquivo, dados_arquivo) if x]
+
     def acao(ctx):
-        import jsonschema
-        import yaml
         if op == "list":
-            return Resultado(motor="papiro", dados={"receitas": sorted(p.name for p in RECIPES.glob("*.yaml"))})
+            itens = []
+            for p in sorted(RECIPES.glob("*.yaml")):
+                try:
+                    rec, _sha = REC.carregar(p)
+                    itens.append({"arquivo": p.name, "receita": rec["receita"], "descricao": rec.get("descricao", ""),
+                                  "passos": len(rec["passos"]), "sensivel": bool(rec.get("sensivel"))})
+                except PapiroErro as e:
+                    itens.append({"arquivo": p.name, "invalida": e.mensagem})
+            return Resultado(motor="papiro", dados={"receitas": itens})
         if op == "validate":
-            if not ctx.entradas:
+            if not arquivo:
                 raise PapiroErro("E_ENTRADA", "informe o arquivo da receita")
-            rec = yaml.safe_load(ctx.entradas[0].read_text(encoding="utf-8"))
-            if not isinstance(rec, dict):
-                raise PapiroErro("E_ENTRADA", "receita deve ser um mapa YAML")
-            erros = sorted(f"{'/'.join(map(str, e.path)) or '(raiz)'}: {e.message}"
-                           for e in jsonschema.Draft202012Validator(RECEITA_SCHEMA).iter_errors(rec))
-            ids = [p.get("id") for p in rec.get("passos", []) if isinstance(p, dict)]
-            if len(ids) != len(set(ids)):
-                erros.append("ids de passo repetidos")
+            import yaml
+            try:
+                rec = yaml.safe_load(ctx.entradas[0].read_text(encoding="utf-8"))
+            except yaml.YAMLError as e:
+                return Resultado(motor="jsonschema", dados={"valida": False, "erros": [f"YAML invalido: {str(e).splitlines()[0]}"]})
+            erros = REC.validar(rec)
             return Resultado(motor="jsonschema", dados={"valida": not erros, "erros": erros})
-        raise PapiroErro("E_SEM_SUPORTE", f"recipes.{op}: executor de receitas ainda nao implementado")
-    return executar("recipes", op, acao, entradas=[arquivo] if arquivo else [], out_dir=out_dir or None, escreve=False)
+        if op == "status":
+            st = JOBS.execucao_ler(execucao)
+            if st is None:
+                raise PapiroErro("E_ENTRADA", f"execucao {execucao} nao existe")
+            return Resultado(motor="sqlite", dados=st)
+        if op == "cancel":
+            return Resultado(motor="sqlite", dados=REC.cancelar(execucao))
+        if op == "save":
+            ids = [x.strip() for x in job_ids.split(",") if x.strip()]
+            if not ids:
+                raise PapiroErro("E_ENTRADA", "informe job_ids")
+            import yaml
+            rec = REC.receita_de_jobs(ids, nome)
+            destino = ctx.saida(f"{nome}.yaml")
+            destino.write_text(yaml.safe_dump(rec, allow_unicode=True, sort_keys=False), encoding="utf-8")
+            return Resultado(outputs=[destino], motor="papiro", dados={"receita": rec["receita"], "passos": len(rec["passos"])})
+        if op == "run":
+            if not arquivo:
+                raise PapiroErro("E_ENTRADA", "informe o arquivo da receita")
+            rec, sha = REC.carregar(ctx.entradas[0])
+            if dados_arquivo:
+                dados = json.loads(ctx.entradas[1].read_text(encoding="utf-8"))
+            else:
+                try:
+                    dados = json.loads(dados_json) if dados_json else {}
+                except json.JSONDecodeError as e:
+                    raise PapiroErro("E_ENTRADA", f"dados_json invalido: {e.msg}")
+            try:
+                externos = json.loads(externos_json) if externos_json else {}
+            except json.JSONDecodeError as e:
+                raise PapiroErro("E_ENTRADA", f"externos_json invalido: {e.msg}")
+            rel = REC.executar(rec, sha, dados, ctx.out_dir, execucao or None,
+                               [c for c in confirmados.split(",") if c.strip()], externos)
+            saidas = [pathlib.Path(rel["relatorio"])] + ([pathlib.Path(rel["saida_final"])] if rel.get("saida_final") else [])
+            res = Resultado(outputs=saidas, motor="receitas", dados=rel, warnings=rel.get("avisos", []))
+            ultimo = rel["passos"][-1]["id"] if rel["passos"] else "-"
+            if rel["status"] in ("aguardando_confirmacao", "aguardando_seguranca"):
+                res.erro = PapiroErro("E_POLITICA", f"receita pausada ({rel['status']}) no passo {rel['pendente']['passo']}")
+            elif rel["status"] == "reprovado":
+                res.erro = PapiroErro("E_CONFORMIDADE", f"assercao 'exige' falhou no passo {ultimo}")
+            elif rel["status"] == "falhou":
+                codigo = (rel.get("erro") or {}).get("code") or "E_MOTOR"
+                mensagem = (rel.get("erro") or {}).get("message") or "; ".join(rel["passos"][-1].get("falhas", [])) or f"passo {ultimo} falhou"
+                res.erro = PapiroErro(codigo, mensagem[:500])
+            return res
+        raise PapiroErro("E_SEM_SUPORTE", f"recipes.{op}")
+
+    padrao_out = out_dir or (str(OUT / __import__("datetime").date.today().isoformat()) if op in ("run", "save") else "")
+    return executar("recipes", op, acao, entradas=entradas, out_dir=padrao_out or None,
+                    escreve=op in ("run", "save"), dry_run=dry_run)
 
 
 @mcp.tool()
@@ -872,12 +984,13 @@ def recurso_relatorio(job_id: str) -> str:
 
 @mcp.resource("papiro://brandkits")
 def recurso_brandkits() -> str:
-    return json.dumps(sorted(p.name for p in (REPO / "brandkits").glob("*")) if (REPO / "brandkits").exists() else [])
+    return json.dumps(sorted(p.parent.name for p in (REPO / "brandkits").glob("*/tokens.yaml")))
 
 
 @mcp.resource("papiro://templates")
 def recurso_templates() -> str:
-    return json.dumps(sorted(p.name for p in (REPO / "templates").glob("*")) if (REPO / "templates").exists() else [])
+    from . import templates as TP
+    return json.dumps(TP.listar(), ensure_ascii=False, indent=2)
 
 
 @mcp.prompt(name="criar-documento")

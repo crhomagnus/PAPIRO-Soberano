@@ -1,0 +1,42 @@
+{
+  "titulo": "Relatório Trimestral de Operações",
+  "subtitulo": "3º trimestre de 2026",
+  "autor": "Equipe de Exemplo",
+  "organizacao": "Organização Fictícia Ltda.",
+  "data": "17/09/2026",
+  "resumo": "Síntese fictícia: o trimestre manteve a produção estável, reduziu custos e ampliou o atendimento.",
+  "secoes": [
+    {
+      "titulo": "Contexto",
+      "paragrafos": [
+        "Este relatório de exemplo demonstra o template: capa, sumário com links internos e seções numeradas.",
+        "Os números aqui apresentados são fictícios."
+      ]
+    },
+    {
+      "titulo": "Resultados",
+      "paragrafos": [
+        "Os indicadores principais evoluíram de forma consistente."
+      ],
+      "topicos": [
+        "Produção estável",
+        "Custos 8% menores",
+        "Atendimento ampliado"
+      ],
+      "subsecoes": [
+        {
+          "titulo": "Indicadores operacionais",
+          "paragrafos": [
+            "O tempo médio de atendimento caiu de 12 para 9 minutos."
+          ]
+        }
+      ]
+    },
+    {
+      "titulo": "Próximos passos",
+      "paragrafos": [
+        "Consolidar os ganhos e revisar metas para o próximo trimestre."
+      ]
+    }
+  ]
+}

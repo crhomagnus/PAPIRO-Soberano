@@ -1,0 +1,22 @@
+{
+  "emissor": {
+    "nome": "Instituto Fictício de Documentos"
+  },
+  "participante": "Participante de Exemplo",
+  "evento": "Oficina de PDF Acessível",
+  "periodo": "24 de setembro de 2026",
+  "local": "Santa Maria/RS",
+  "carga_horaria": 8,
+  "assinaturas": [
+    {
+      "nome": "Coordenadora Fictícia",
+      "cargo": "Coordenação"
+    },
+    {
+      "nome": "Instrutor Fictício",
+      "cargo": "Instrutor"
+    }
+  ],
+  "codigo_verificacao": "EXEMPLO-0001",
+  "url_verificacao": "https://exemplo.invalid/verificar/EXEMPLO-0001"
+}

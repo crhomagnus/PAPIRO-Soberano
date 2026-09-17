@@ -1,0 +1,45 @@
+{
+  "titulo": "Contrato de Prestação de Serviços (exemplo)",
+  "partes": [
+    {
+      "papel": "Contratante",
+      "nome": "Cliente Exemplo S.A.",
+      "qualificacao": "pessoa jurídica fictícia, com sede na Rua Exemplo, 1, doravante CONTRATANTE;"
+    },
+    {
+      "papel": "Contratada",
+      "nome": "Empresa Fictícia Serviços Ltda.",
+      "qualificacao": "pessoa jurídica fictícia, com sede na Av. Modelo, 2, doravante CONTRATADA."
+    }
+  ],
+  "clausulas": [
+    {
+      "titulo": "Do objeto",
+      "texto": "Texto fictício de exemplo descrevendo o objeto do contrato."
+    },
+    {
+      "titulo": "Do prazo",
+      "texto": "Texto fictício de exemplo sobre vigência."
+    },
+    {
+      "titulo": "Do preço",
+      "texto": "Texto fictício de exemplo sobre valores e pagamento."
+    },
+    {
+      "titulo": "Do foro",
+      "texto": "Texto fictício de exemplo sobre foro."
+    }
+  ],
+  "local": "Santa Maria",
+  "data": "17/09/2026",
+  "testemunhas": [
+    {
+      "nome": "Testemunha Um",
+      "documento": "RG 000000"
+    },
+    {
+      "nome": "Testemunha Dois",
+      "documento": "RG 000001"
+    }
+  ]
+}

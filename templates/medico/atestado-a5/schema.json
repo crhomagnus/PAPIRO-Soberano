@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Atestado médico",
+  "type": "object",
+  "required": [
+    "medico",
+    "paciente",
+    "dias"
+  ],
+  "properties": {
+    "medico": {
+      "type": "object",
+      "required": [
+        "nome",
+        "crm",
+        "uf"
+      ],
+      "properties": {
+        "nome": {
+          "type": "string",
+          "minLength": 1
+        },
+        "crm": {
+          "type": "string",
+          "pattern": "^[0-9]{1,8}$"
+        },
+        "uf": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
+        },
+        "rqe": {
+          "type": "string",
+          "minLength": 1
+        },
+        "especialidade": {
+          "type": "string",
+          "minLength": 1
+        },
+        "endereco": {
+          "type": "string",
+          "minLength": 1
+        },
+        "telefone": {
+          "type": "string",
+          "minLength": 1
+        },
+        "email": {
+          "type": "string",
+          "minLength": 1
+        },
+        "logo": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "paciente": {
+      "type": "object",
+      "required": [
+        "nome",
+        "documento"
+      ],
+      "properties": {
+        "nome": {
+          "type": "string",
+          "minLength": 1
+        },
+        "documento": {
+          "type": "object",
+          "required": [
+            "tipo",
+            "numero"
+          ],
+          "properties": {
+            "tipo": {
+              "type": "string",
+              "minLength": 1
+            },
+            "numero": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "dias": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 365
+    },
+    "data_inicio": {
+      "type": "string",
+      "pattern": "^\\d{2}/\\d{2}/\\d{4}$"
+    },
+    "horario": {
+      "type": "string",
+      "minLength": 1
+    },
+    "finalidade": {
+      "type": "string",
+      "minLength": 1
+    },
+    "diagnostico": {
+      "type": "object",
+      "required": [
+        "cid"
+      ],
+      "properties": {
+        "cid": {
+          "type": "string",
+          "pattern": "^[A-Z][0-9]{2}(\\.[0-9A-Z]{1,2})?$"
+        },
+        "descricao": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "autorizacao_diagnostico": {
+      "type": "boolean"
+    },
+    "observacoes": {
+      "type": "string",
+      "minLength": 1
+    },
+    "local": {
+      "type": "string",
+      "minLength": 1
+    },
+    "data": {
+      "type": "string",
+      "pattern": "^\\d{2}/\\d{2}/\\d{4}$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "diagnostico"
+        ]
+      },
+      "then": {
+        "required": [
+          "autorizacao_diagnostico"
+        ],
+        "properties": {
+          "autorizacao_diagnostico": {
+            "const": true
+          }
+        }
+      }
+    }
+  ]
+}

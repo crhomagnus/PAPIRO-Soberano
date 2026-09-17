@@ -1,0 +1,10 @@
+nome = "Apostila"
+descricao = "Apostila A4 com capa, sumário, capítulos e exercícios."
+categoria = "editorial"
+papel = "A4"
+design = false
+padroes = []
+titulo = "{titulo}"
+autor_campo = "autor"
+sensivel = false
+notas = []

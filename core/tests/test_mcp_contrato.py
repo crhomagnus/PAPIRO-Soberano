@@ -270,11 +270,11 @@ def test_qa_jobs_recipes_engines(pdf_bom, pdf_textos, out_dir):
     assert ok(M.jobs("route", pedido="Quero comprimir este PDF"))["dados"]["tarefa"] == "otimizar"
     assert ok(M.jobs("cancel", job_id="nao-existe"))["dados"]["existe"] is False
     assert envelope_ok(M.jobs("xyz"))["error"]["code"] == "E_SEM_SUPORTE"
-    assert "exemplo-receituario-assinado.yaml" in ok(M.recipes("list"))["dados"]["receitas"]
+    assert "exemplo-receituario-assinado.yaml" in {r["arquivo"] for r in ok(M.recipes("list"))["dados"]["receitas"]}
     ruim = CORPUS / "receita_ruim.yaml"
     ruim.write_text("receita: x\nversao: 0\npassos:\n  - ferramenta: compose\n", encoding="utf-8")
     assert ok(M.recipes("validate", arquivo=str(ruim)))["dados"]["valida"] is False
-    assert envelope_ok(M.recipes("run", arquivo=str(ruim)))["error"]["code"] == "E_SEM_SUPORTE"
+    assert envelope_ok(M.recipes("run", arquivo=str(ruim)))["error"]["code"] == "E_ENTRADA"   # receita invalida nao roda
     assert ok(M.engines())["dados"]["libs"]["pymupdf"]
 
 

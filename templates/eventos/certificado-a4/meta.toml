@@ -1,0 +1,10 @@
+nome = "Certificado"
+descricao = "Certificado A4 paisagem com assinaturas e código/QR de verificação."
+categoria = "eventos"
+papel = "A4 paisagem"
+design = true
+padroes = []
+titulo = "Certificado {evento}"
+autor_campo = "emissor.nome"
+sensivel = false
+notas = []

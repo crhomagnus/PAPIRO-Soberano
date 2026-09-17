@@ -1,0 +1,31 @@
+{
+  "medico": {
+    "nome": "Dra. Helena Exemplo (fictícia)",
+    "crm": "00000",
+    "uf": "RS",
+    "rqe": "00000",
+    "especialidade": "Clínica Médica",
+    "endereco": "Rua Fictícia, 100 — Centro, Santa Maria/RS",
+    "telefone": "(55) 3000-0000",
+    "email": "contato@exemplo.invalid"
+  },
+  "paciente": {
+    "nome": "Paciente Fictício de Exemplo",
+    "data_nascimento": "01/01/1980"
+  },
+  "destino": {
+    "especialidade": "Cardiologia",
+    "servico": "Ambulatório de especialidades (fictício)"
+  },
+  "motivo": "Avaliação especializada de palpitações recorrentes (caso fictício de exemplo).",
+  "resumo_clinico": "Paciente fictício com episódios de palpitação há dois meses, sem síncope. Exame físico sem alterações relevantes.",
+  "exames_realizados": [
+    "Eletrocardiograma de repouso: ritmo sinusal (exemplo)"
+  ],
+  "medicacoes_em_uso": [
+    "Nenhuma"
+  ],
+  "urgencia": "prioritario",
+  "local": "Santa Maria",
+  "data": "17/09/2026"
+}

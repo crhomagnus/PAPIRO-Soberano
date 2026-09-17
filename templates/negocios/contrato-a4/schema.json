@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Contrato",
+  "type": "object",
+  "required": [
+    "titulo",
+    "partes",
+    "clausulas"
+  ],
+  "properties": {
+    "titulo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "partes": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": [
+          "papel",
+          "nome",
+          "qualificacao"
+        ],
+        "properties": {
+          "papel": {
+            "type": "string",
+            "minLength": 1
+          },
+          "nome": {
+            "type": "string",
+            "minLength": 1
+          },
+          "qualificacao": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "clausulas": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 60,
+      "items": {
+        "type": "object",
+        "required": [
+          "titulo",
+          "texto"
+        ],
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "minLength": 1
+          },
+          "texto": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "local": {
+      "type": "string",
+      "minLength": 1
+    },
+    "data": {
+      "type": "string",
+      "pattern": "^\\d{2}/\\d{2}/\\d{4}$"
+    },
+    "testemunhas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "nome"
+        ],
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1
+          },
+          "documento": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

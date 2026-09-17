@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Cartaz",
+  "type": "object",
+  "required": [
+    "titulo",
+    "subtitulo",
+    "data",
+    "horario",
+    "local",
+    "destaque",
+    "chamada"
+  ],
+  "properties": {
+    "titulo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "subtitulo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "data": {
+      "type": "string",
+      "minLength": 1
+    },
+    "horario": {
+      "type": "string",
+      "minLength": 1
+    },
+    "local": {
+      "type": "string",
+      "minLength": 1
+    },
+    "destaque": {
+      "type": "string",
+      "minLength": 1
+    },
+    "chamada": {
+      "type": "string",
+      "minLength": 1
+    },
+    "organizador": {
+      "type": "string",
+      "minLength": 1
+    },
+    "logo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "url_qr": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

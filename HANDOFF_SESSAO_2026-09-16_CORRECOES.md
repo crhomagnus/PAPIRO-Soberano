@@ -87,6 +87,7 @@ Chrome 149, Graphviz. Python: OCRmyPDF 17.12.1, pyHanko 0.37, Presidio 2.2.364 +
 Fontes OFL em `fonts/` (Liberation, fsType 0, licença incluída).
 
 ## 6. Continua NÃO implementado (a ferramenta responde `E_SEM_SUPORTE` com alternativa)
+> **Atualização 17/09/2026:** executor de receitas, 16 templates RF-307, brand kit e RF-908 foram implementados — ver `HANDOFF_SESSAO_2026-09-17_RECEITAS_TEMPLATES.md`.
 tradução com layout (RF-608) · texto alternativo por visão (RF-609) · decks Touying/handout com notas (RF-501..506) ·
 16 templates RF-307 e brand kits · executor de receitas (§9.3; `recipes run`) · lotes paralelos com retomada, pastas
 monitoradas e agendamento (RF-905..907) · A3/PKCS#11, carimbo do tempo, LTV (RF-806 parcial) · Docling/PaddleOCR-VL

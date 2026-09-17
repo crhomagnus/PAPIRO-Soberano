@@ -46,7 +46,7 @@ logos:
 
 ## Estado real
 Fontes incluídas em `fonts/`: Liberation Sans (4 estilos), Liberation Serif (4), Liberation Mono - SIL OFL 1.1, fsType 0
-(embutimento livre). `brandkits/` ainda não tem marcas: sem `tokens.yaml`, use Liberation. `fonts op=list` mostra fsType
+(embutimento livre). Brand kit padrão em `brandkits/padrao/tokens.yaml`; marca nova = nova pasta com o mesmo formato. `fonts op=list` mostra fsType
 de cada fonte embutida de um PDF; fsType restritivo → trocar por OFL.
 
 Fonte canônica: `docs/PAPIRO_PRD_ORIGINAL.md` (trechos acima copiados verbatim) e `docs/AGENTE_AUTONOMO_ENGENHARIA_PDF.md`. Ferramentas do MCP `papiro` respondem no envelope §8.1 (`ok`, `job_id`, `outputs`, `engine`, `qa`, `error`). Nunca declarar sucesso com `ok=false`.

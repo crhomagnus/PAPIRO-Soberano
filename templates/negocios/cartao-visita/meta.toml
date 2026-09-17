@@ -1,0 +1,10 @@
+nome = "Cartão de visita"
+descricao = "Cartão 85 x 55 mm, frente e verso."
+categoria = "negocios"
+papel = "85x55mm"
+design = true
+padroes = []
+titulo = "Cartão de visita {nome}"
+autor_campo = "empresa"
+sensivel = false
+notas = []

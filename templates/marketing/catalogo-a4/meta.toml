@@ -1,0 +1,10 @@
+nome = "Catálogo"
+descricao = "Catálogo A4 de produtos em cartões com imagem opcional."
+categoria = "marketing"
+papel = "A4"
+design = true
+padroes = []
+titulo = "{titulo}"
+autor_campo = "empresa"
+sensivel = false
+notas = []

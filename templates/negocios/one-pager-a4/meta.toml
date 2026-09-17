@@ -1,0 +1,10 @@
+nome = "One-pager"
+descricao = "Página única A4 com destaques numéricos, blocos e chamada."
+categoria = "negocios"
+papel = "A4"
+design = true
+padroes = []
+titulo = "{titulo}"
+autor_campo = "marca"
+sensivel = false
+notas = []

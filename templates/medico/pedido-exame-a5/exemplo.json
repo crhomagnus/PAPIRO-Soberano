@@ -1,0 +1,34 @@
+{
+  "medico": {
+    "nome": "Dra. Helena Exemplo (fictícia)",
+    "crm": "00000",
+    "uf": "RS",
+    "rqe": "00000",
+    "especialidade": "Clínica Médica",
+    "endereco": "Rua Fictícia, 100 — Centro, Santa Maria/RS",
+    "telefone": "(55) 3000-0000",
+    "email": "contato@exemplo.invalid"
+  },
+  "paciente": {
+    "nome": "Paciente Fictício de Exemplo",
+    "data_nascimento": "01/01/1980"
+  },
+  "exames": [
+    {
+      "nome": "Hemograma completo"
+    },
+    {
+      "nome": "Glicemia de jejum",
+      "observacao": "Jejum de 8 horas"
+    },
+    {
+      "nome": "TSH e T4 livre"
+    },
+    {
+      "nome": "Perfil lipídico"
+    }
+  ],
+  "indicacao_clinica": "Avaliação clínica periódica (exemplo fictício).",
+  "local": "Santa Maria",
+  "data": "17/09/2026"
+}

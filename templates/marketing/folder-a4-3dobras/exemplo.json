@@ -1,0 +1,39 @@
+{
+  "capa": {
+    "titulo": "Cuidar bem começa pela informação",
+    "subtitulo": "Guia fictício de exemplo"
+  },
+  "aba": {
+    "titulo": "Quem somos",
+    "texto": "Texto de exemplo apresentando a organização fictícia e sua missão."
+  },
+  "contracapa": {
+    "titulo": "Fale conosco",
+    "contato": "Rua Fictícia, 100 — Santa Maria/RS · (55) 3000-0003 · exemplo.invalid"
+  },
+  "url_qr": "https://exemplo.invalid/guia",
+  "paineis": [
+    {
+      "titulo": "O que oferecemos",
+      "texto": "Descrição fictícia dos serviços.",
+      "topicos": [
+        "Atendimento agendado",
+        "Orientação clara",
+        "Acompanhamento"
+      ]
+    },
+    {
+      "titulo": "Como funciona",
+      "texto": "Passo a passo de exemplo para o público.",
+      "topicos": [
+        "Agende",
+        "Compareça",
+        "Receba o plano"
+      ]
+    },
+    {
+      "titulo": "Dúvidas frequentes",
+      "texto": "Respostas curtas e fictícias às perguntas mais comuns."
+    }
+  ]
+}

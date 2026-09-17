@@ -1,0 +1,32 @@
+{
+  "titulo": "Catálogo 2026",
+  "empresa": "Ateliê Fictício",
+  "introducao": "Seleção de produtos de exemplo, com preços fictícios.",
+  "produtos": [
+    {
+      "nome": "Caderno pautado",
+      "descricao": "Capa dura, 160 folhas, papel 90 g/m².",
+      "preco": 42.9,
+      "codigo": "CAD-01"
+    },
+    {
+      "nome": "Caneta tinteiro",
+      "descricao": "Corpo em resina, pena média.",
+      "preco": 129,
+      "codigo": "CAN-02"
+    },
+    {
+      "nome": "Estojo de lona",
+      "descricao": "Zíper metálico, dois compartimentos.",
+      "preco": 58.5,
+      "codigo": "EST-03"
+    },
+    {
+      "nome": "Marcador de páginas",
+      "descricao": "Kit com 4 marcadores de metal.",
+      "preco": 19.9,
+      "codigo": "MAR-04"
+    }
+  ],
+  "rodape": "Preços de exemplo, sujeitos a alteração."
+}

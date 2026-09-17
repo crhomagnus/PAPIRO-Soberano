@@ -1,0 +1,22 @@
+receita: atestado-pdfa
+versao: 1
+descricao: Atestado A5 em PDF/A-2b e PDF/UA-1, validado no veraPDF e nos portoes G1-G11 (sem assinatura)
+sensivel: true
+entradas:
+  dados: {tipo: json, esquema: templates/medico/atestado-a5/schema.json}
+passos:
+  - id: compor
+    ferramenta: compose
+    com: {motor: typst, template: medico/atestado-a5, dados: $dados, padroes_pdf: [a-2b, ua-1]}
+    exige: {ok: true}
+  - id: validar
+    ferramenta: validate
+    com: {validadores: [verapdf, qpdf]}
+    exige: {verapdf: aprovado}
+  - id: revisar
+    ferramenta: qa_run
+    exige: {qa: APROVADO}
+saida:
+  pasta: out/medico/{data}
+  nome: atestado-{id_pseudonimo}.pdf
+  de: compor

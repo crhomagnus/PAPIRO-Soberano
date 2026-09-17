@@ -1,0 +1,24 @@
+{
+  "medico": {
+    "nome": "Dra. Helena Exemplo (fictícia)",
+    "crm": "00000",
+    "uf": "RS",
+    "rqe": "00000",
+    "especialidade": "Clínica Médica",
+    "endereco": "Rua Fictícia, 100 — Centro, Santa Maria/RS",
+    "telefone": "(55) 3000-0000",
+    "email": "contato@exemplo.invalid"
+  },
+  "paciente": {
+    "nome": "Paciente Fictício de Exemplo",
+    "documento": {
+      "tipo": "RG",
+      "numero": "0000000000"
+    }
+  },
+  "dias": 3,
+  "data_inicio": "17/09/2026",
+  "finalidade": "de suas atividades laborais",
+  "local": "Santa Maria",
+  "data": "17/09/2026"
+}

@@ -1,0 +1,37 @@
+{
+  "empresa": {
+    "nome": "Empresa Fictícia Serviços Ltda.",
+    "contato": "comercial@exemplo.invalid · (55) 3000-0001",
+    "responsavel": "Fulano Exemplar"
+  },
+  "cliente": {
+    "nome": "Cliente Exemplo S.A.",
+    "contato": "compras@cliente.invalid"
+  },
+  "numero": "PR-2026-017",
+  "data": "17/09/2026",
+  "validade_dias": 15,
+  "apresentacao": "Apresentamos a proposta fictícia para diagramação e automação de documentos em PDF.",
+  "itens": [
+    {
+      "descricao": "Diagnóstico de documentos",
+      "quantidade": 1,
+      "valor_unitario": 1800
+    },
+    {
+      "descricao": "Templates personalizados",
+      "quantidade": 4,
+      "valor_unitario": 950.5
+    },
+    {
+      "descricao": "Treinamento (horas)",
+      "quantidade": 6,
+      "valor_unitario": 180
+    }
+  ],
+  "prazo_entrega": "20 dias úteis após o aceite.",
+  "condicoes": [
+    "Pagamento em 2 parcelas",
+    "Valores sem impostos (exemplo)"
+  ]
+}

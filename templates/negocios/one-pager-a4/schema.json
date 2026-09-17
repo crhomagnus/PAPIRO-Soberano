@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "One-pager",
+  "type": "object",
+  "required": [
+    "titulo",
+    "marca",
+    "destaques",
+    "blocos",
+    "chamada",
+    "contato"
+  ],
+  "properties": {
+    "titulo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "subtitulo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "marca": {
+      "type": "string",
+      "minLength": 1
+    },
+    "logo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "chamada": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contato": {
+      "type": "string",
+      "minLength": 1
+    },
+    "destaques": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": [
+          "valor",
+          "rotulo"
+        ],
+        "properties": {
+          "valor": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rotulo": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "blocos": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "required": [
+          "titulo",
+          "texto"
+        ],
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "minLength": 1
+          },
+          "texto": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Apostila",
+  "type": "object",
+  "required": [
+    "titulo",
+    "autor",
+    "capitulos"
+  ],
+  "properties": {
+    "titulo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "subtitulo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "autor": {
+      "type": "string",
+      "minLength": 1
+    },
+    "instituicao": {
+      "type": "string",
+      "minLength": 1
+    },
+    "logo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "capitulos": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "titulo"
+        ],
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "minLength": 1
+          },
+          "introducao": {
+            "type": "string",
+            "minLength": 1
+          },
+          "exercicios": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "secoes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "titulo",
+                "paragrafos"
+              ],
+              "properties": {
+                "titulo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "paragrafos": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "minItems": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

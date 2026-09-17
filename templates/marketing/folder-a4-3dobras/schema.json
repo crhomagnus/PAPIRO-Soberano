@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Folder",
+  "type": "object",
+  "required": [
+    "capa",
+    "aba",
+    "contracapa",
+    "paineis"
+  ],
+  "properties": {
+    "capa": {
+      "type": "object",
+      "required": [
+        "titulo",
+        "subtitulo"
+      ],
+      "properties": {
+        "titulo": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subtitulo": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "aba": {
+      "type": "object",
+      "required": [
+        "titulo",
+        "texto"
+      ],
+      "properties": {
+        "titulo": {
+          "type": "string",
+          "minLength": 1
+        },
+        "texto": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "contracapa": {
+      "type": "object",
+      "required": [
+        "titulo",
+        "contato"
+      ],
+      "properties": {
+        "titulo": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contato": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "logo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "url_qr": {
+      "type": "string",
+      "minLength": 1
+    },
+    "paineis": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": [
+          "titulo",
+          "texto"
+        ],
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "minLength": 1
+          },
+          "texto": {
+            "type": "string",
+            "minLength": 1
+          },
+          "topicos": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+nome = "Cartaz"
+descricao = "Cartaz A3 de evento com data, local, chamada e QR opcional."
+categoria = "marketing"
+papel = "A3"
+design = true
+padroes = []
+titulo = "{titulo}"
+autor_campo = "organizador"
+sensivel = false
+notas = []

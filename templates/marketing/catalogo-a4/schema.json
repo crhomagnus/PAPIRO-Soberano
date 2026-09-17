@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Catálogo",
+  "type": "object",
+  "required": [
+    "titulo",
+    "empresa",
+    "produtos"
+  ],
+  "properties": {
+    "titulo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "empresa": {
+      "type": "string",
+      "minLength": 1
+    },
+    "introducao": {
+      "type": "string",
+      "minLength": 1
+    },
+    "logo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rodape": {
+      "type": "string",
+      "minLength": 1
+    },
+    "produtos": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "nome",
+          "descricao",
+          "preco"
+        ],
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1
+          },
+          "descricao": {
+            "type": "string",
+            "minLength": 1
+          },
+          "preco": {
+            "type": "number",
+            "minimum": 0
+          },
+          "codigo": {
+            "type": "string",
+            "minLength": 1
+          },
+          "imagem": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+receita: lote-certificados
+versao: 1
+descricao: Um certificado por participante (em paralelo) e, se pedido, um PDF unico com todos para impressao
+entradas:
+  dados: {tipo: json}
+passos:
+  - id: gerar
+    ferramenta: compose
+    para_cada: $dados.certificados
+    paralelo: 2
+    com: {motor: typst, template: eventos/certificado-a4, dados: $item, nota_visual: $dados.nota_visual}
+    exige: {qa: APROVADO}
+  - id: juntar
+    ferramenta: pages
+    se: "$dados.juntar == true"
+    com: {op: merge, entradas: $gerar.saidas, qa: false}
+    exige: {ok: true}
+saida:
+  pasta: out/eventos/{data}
+  nome: certificados-{execucao}.pdf

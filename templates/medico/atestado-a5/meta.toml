@@ -1,0 +1,10 @@
+nome = "Atestado médico"
+descricao = "Atestado A5 de afastamento ou comparecimento."
+categoria = "medico"
+papel = "A5"
+design = false
+padroes = ["a-2b", "ua-1"]
+titulo = "Atestado médico"
+autor_campo = "medico.nome"
+sensivel = true
+notas = ["Resolução CFM 1.658/2002 (redação da 1.851/2008), conferida em 17/09/2026: art. 3º (tempo de dispensa; diagnóstico só com autorização expressa; emissor identificado com CRM), art. 4º §2º (dados da prova de identidade no atestado) e art. 5º, parágrafo único (concordância com o diagnóstico expressa no atestado)."]

@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Encaminhamento",
+  "type": "object",
+  "required": [
+    "medico",
+    "paciente",
+    "destino",
+    "motivo"
+  ],
+  "properties": {
+    "medico": {
+      "type": "object",
+      "required": [
+        "nome",
+        "crm",
+        "uf"
+      ],
+      "properties": {
+        "nome": {
+          "type": "string",
+          "minLength": 1
+        },
+        "crm": {
+          "type": "string",
+          "pattern": "^[0-9]{1,8}$"
+        },
+        "uf": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
+        },
+        "rqe": {
+          "type": "string",
+          "minLength": 1
+        },
+        "especialidade": {
+          "type": "string",
+          "minLength": 1
+        },
+        "endereco": {
+          "type": "string",
+          "minLength": 1
+        },
+        "telefone": {
+          "type": "string",
+          "minLength": 1
+        },
+        "email": {
+          "type": "string",
+          "minLength": 1
+        },
+        "logo": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "paciente": {
+      "type": "object",
+      "required": [
+        "nome"
+      ],
+      "properties": {
+        "nome": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data_nascimento": {
+          "type": "string",
+          "pattern": "^\\d{2}/\\d{2}/\\d{4}$"
+        },
+        "documento": {
+          "type": "object",
+          "required": [
+            "tipo",
+            "numero"
+          ],
+          "properties": {
+            "tipo": {
+              "type": "string",
+              "minLength": 1
+            },
+            "numero": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "destino": {
+      "type": "object",
+      "required": [
+        "especialidade"
+      ],
+      "properties": {
+        "especialidade": {
+          "type": "string",
+          "minLength": 1
+        },
+        "servico": {
+          "type": "string",
+          "minLength": 1
+        },
+        "profissional": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "motivo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "resumo_clinico": {
+      "type": "string",
+      "minLength": 1
+    },
+    "exames_realizados": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "medicacoes_em_uso": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "urgencia": {
+      "enum": [
+        "eletivo",
+        "prioritario",
+        "urgente"
+      ]
+    },
+    "local": {
+      "type": "string",
+      "minLength": 1
+    },
+    "data": {
+      "type": "string",
+      "pattern": "^\\d{2}/\\d{2}/\\d{4}$"
+    }
+  }
+}

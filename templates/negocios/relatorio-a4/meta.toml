@@ -1,0 +1,10 @@
+nome = "Relatório"
+descricao = "Relatório A4 com capa, sumário e seções numeradas."
+categoria = "negocios"
+papel = "A4"
+design = false
+padroes = []
+titulo = "{titulo}"
+autor_campo = "autor"
+sensivel = false
+notas = []

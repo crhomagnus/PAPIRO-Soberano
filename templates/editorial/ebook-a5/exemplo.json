@@ -1,0 +1,29 @@
+{
+  "titulo": "Pequeno Guia do Papel",
+  "subtitulo": "Um e-book de exemplo",
+  "autor": "Autora Fictícia",
+  "editora": "Edições Exemplo",
+  "ano": 2026,
+  "dedicatoria": "A quem lê até o fim.",
+  "capitulos": [
+    {
+      "titulo": "Começo",
+      "paragrafos": [
+        "Este é um texto fictício para demonstrar o template de e-book em formato A5, com parágrafos justificados, hifenização em português e recuo na primeira linha.",
+        "O segundo parágrafo continua a narrativa de exemplo, mostrando o espaçamento entre parágrafos e o ritmo da leitura."
+      ]
+    },
+    {
+      "titulo": "Meio",
+      "paragrafos": [
+        "Capítulos começam em nova página, com título centralizado e margem superior generosa."
+      ]
+    },
+    {
+      "titulo": "Fim",
+      "paragrafos": [
+        "O sumário traz links internos para cada capítulo."
+      ]
+    }
+  ]
+}

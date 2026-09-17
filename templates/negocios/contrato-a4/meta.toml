@@ -1,0 +1,10 @@
+nome = "Contrato"
+descricao = "Contrato A4 com partes, cláusulas numeradas por extenso e assinaturas."
+categoria = "negocios"
+papel = "A4"
+design = false
+padroes = []
+titulo = "{titulo}"
+autor_campo = "partes.0.nome"
+sensivel = false
+notas = ["O template só diagrama: o texto jurídico é responsabilidade de quem redige."]

@@ -1,0 +1,39 @@
+{
+  "titulo": "Documentos que se validam sozinhos",
+  "subtitulo": "Automação de PDF com qualidade verificada",
+  "marca": "Exemplo Docs",
+  "destaques": [
+    {
+      "valor": "11",
+      "rotulo": "portões de qualidade"
+    },
+    {
+      "valor": "3,3 s",
+      "rotulo": "OCR por página A4"
+    },
+    {
+      "valor": "R$ 0",
+      "rotulo": "em licenças"
+    }
+  ],
+  "blocos": [
+    {
+      "titulo": "Criação",
+      "texto": "Templates versionados, brand kit único e PDF/A e PDF/UA nativos."
+    },
+    {
+      "titulo": "Conferência",
+      "texto": "Validação independente e comparação visual antes de qualquer entrega."
+    },
+    {
+      "titulo": "Segurança",
+      "texto": "Tarjamento real, sanitização e assinatura com confirmação."
+    },
+    {
+      "titulo": "Escala",
+      "texto": "Receitas reproduzíveis com retomada do passo exato."
+    }
+  ],
+  "chamada": "Fale com a equipe de exemplo",
+  "contato": "contato@exemplo.invalid"
+}

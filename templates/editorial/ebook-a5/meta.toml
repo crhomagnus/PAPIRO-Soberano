@@ -1,0 +1,10 @@
+nome = "E-book"
+descricao = "E-book A5 com capa, folha de rosto, sumário e capítulos."
+categoria = "editorial"
+papel = "A5"
+design = false
+padroes = []
+titulo = "{titulo}"
+autor_campo = "autor"
+sensivel = false
+notas = []

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Cartão de visita",
+  "type": "object",
+  "required": [
+    "nome",
+    "cargo",
+    "empresa"
+  ],
+  "properties": {
+    "nome": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cargo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "empresa": {
+      "type": "string",
+      "minLength": 1
+    },
+    "telefone": {
+      "type": "string",
+      "minLength": 1
+    },
+    "email": {
+      "type": "string",
+      "minLength": 1
+    },
+    "site": {
+      "type": "string",
+      "minLength": 1
+    },
+    "endereco": {
+      "type": "string",
+      "minLength": 1
+    },
+    "slogan": {
+      "type": "string",
+      "minLength": 1
+    },
+    "logo": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

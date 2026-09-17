@@ -1,0 +1,10 @@
+nome = "Cardápio"
+descricao = "Cardápio A4 em duas colunas com seções e preços."
+categoria = "marketing"
+papel = "A4"
+design = true
+padroes = []
+titulo = "Cardápio {estabelecimento}"
+autor_campo = "estabelecimento"
+sensivel = false
+notas = []

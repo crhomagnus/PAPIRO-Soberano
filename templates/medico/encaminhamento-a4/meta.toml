@@ -1,0 +1,10 @@
+nome = "Encaminhamento"
+descricao = "Encaminhamento A4 com motivo, resumo clínico e contrarreferência."
+categoria = "medico"
+papel = "A4"
+design = false
+padroes = ["a-2b", "ua-1"]
+titulo = "Encaminhamento médico"
+autor_campo = "medico.nome"
+sensivel = true
+notas = []
