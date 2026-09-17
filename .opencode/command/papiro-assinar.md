@@ -15,3 +15,6 @@ Siga a skill `papiro-assinatura-icp`. Depois, `verify` e relatório ao usuário.
 - **A3 (token/cartão):** `token="<rótulo>" modulo="<biblioteca PKCS#11>" pin_ref="prompt"`. Não sabe o rótulo?
   Rode `papiro token` (lista tokens e certificados). Um token só conectado dispensa `token=`; vários exigem escolher.
   Erro de PIN gasta tentativa e o token bloqueia depois de poucas — confirme com o usuário antes de repetir.
+- **Carimbo do tempo:** acrescente `carimbo=true` (PAdES-B-T) quando o documento precisar de data com fé pública, ou
+  use `timestamp` para carimbar sem assinar. Avise o usuário de que o resumo SHA-256 vai para a TSA (o documento não);
+  em job sensível, só com `rede_tsa=true`.

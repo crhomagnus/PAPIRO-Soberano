@@ -1,11 +1,11 @@
-# HANDOFF — PAPIRO SOBERANO · Sessão 2026-09-17 (assinatura A3 + pastas monitoradas)
+# HANDOFF — PAPIRO SOBERANO · Sessão 2026-09-17 (assinatura A3 + pastas monitoradas + carimbo do tempo)
 
 > Continuação de `HANDOFF_SESSAO_2026-09-17_RECEITAS_TEMPLATES.md`. Tudo abaixo foi medido nesta sessão
 > (17/09/2026, 18:00–20:30 -03) no clone Linux `~/PAPIRO-Soberano`. O que não foi medido está marcado como
 > **não verificado**.
 
 ## 1. Pedido
-"implemente a assinatura A3 e as pastas monitoradas".
+"implemente a assinatura A3 e as pastas monitoradas" e, em seguida, "implemente o carimbo do tempo (TSA)".
 
 ## 2. Assinatura A3 — token ou cartão via PKCS#11 (RF-806, PRD §12.1)
 - `sign` e `certify` (servidor `papiro-seguranca`) agora aceitam **duas credenciais**: A1 (`pfx=` + `senha_ref=`,
@@ -62,18 +62,47 @@
 | Ciclo completo com a receita de OCR + PDF/A | **32,8 s** (1 página) — o tempo é da receita, não da detecção |
 | Primeira execução num `PAPIRO_HOME` novo | +2,8 s só para criar `logs/jobs.db` (disco USB deste PC; depois, 0,3 ms por abertura) |
 
+## 3-B. Carimbo do tempo RFC 3161 (PRD §12.1) — `timestamp` e `sign carimbo=true`
+- **`sign ... carimbo=true`** (ou `tsa="https://..."`) embute o carimbo na assinatura: o perfil passa de **PAdES-B-B
+  para PAdES-B-T**, o motor vira `pyhanko+rfc3161` e o envelope traz `dados.carimbo` (hora atestada, autoridade,
+  se está íntegro). Vale para A1 e A3, e também em `certify`.
+- **`timestamp entrada=... tsa=...`** carimba o documento inteiro sem assinar (DocTimeStamp). Deixou de ser
+  `E_SEM_SUPORTE`. Pode ser aplicado **sobre um PDF já assinado sem quebrar a assinatura** (medido: a assinatura
+  continua íntegra e o carimbo entra por cima).
+- **`verify` agora relata carimbos:** cada item ganhou `tipo` (`assinatura` ou `carimbo_do_documento`) e `carimbo`
+  com hora, autoridade e integridade.
+- **Privacidade (§12.5), medida e testada:** a TSA recebe **só o resumo SHA-256** — o teste intercepta o que sai pela
+  rede e confirma que cada pedido tem menos de 200 bytes, não contém nenhum trecho do PDF e leva apenas um digest de
+  32 bytes. Ainda assim é rede: em **job sensível a chamada é recusada** (`E_POLITICA`) até vir `rede_tsa=true`
+  explícito, e o envelope sempre avisa o que foi enviado e para qual servidor.
+- **Configuração:** `tsa=` na chamada, `PAPIRO_TSA_URL`, ou `[assinatura] tsa_url` no `papiro.toml`
+  (com `tsa_usuario`/`tsa_senha_ref` quando a TSA exigir autenticação, e `tsa_timeout_s`). Carimbo de ACT credenciada
+  na ICP-Brasil costuma ser pago, por isso fica opcional.
+- **Erros úteis:** TSA ausente ou URL que não é http(s) → `E_ENTRADA`; servidor fora do ar → `E_MOTOR` dizendo o
+  servidor; sem resposta → `E_TEMPO`; carimbo que não ficou no documento → `E_CONFORMIDADE`.
+- **Como foi testado:** uma **TSA RFC 3161 de verdade rodando em 127.0.0.1** (o `DummyTimeStamper` do pyHanko atrás
+  de um servidor HTTP), então o caminho exercitado é o mesmo de uma TSA da internet — pedido HTTP, resposta DER,
+  carimbo embutido e validado — sem depender de rede nem de serviço pago.
+- **Não verificado:** TSA pública real (ex.: freetsa.org) e TSA de ACT credenciada ICP-Brasil; `ltv_update`
+  (B-LT/B-LTA) continua sem suporte, porque exige buscar revogação on-line.
+
 ## 4. Testes
 `core/tests/test_assinatura_a3.py` (16 testes: token e certificados, assinatura + verificação, token único,
 `certify`, aparência visível, 7 erros de token/PIN/módulo, políticas, PIN fora do log, `prompt` sem terminal, CLI)
 e `core/tests/test_vigia.py` (9 testes: configuração conferida, processa/move/dedup/reprocessa, espera a cópia
 terminar, arquivo ruim vai para `falhas/`, **falha não vira laço**, **não assina sozinha**, prazo do RF-906, MCP
 `watch`/`watch_status`, CLI).
-**Rodada completa (17/09/2026 19:11): 169 testes passando, 0 falhas, cobertura 87%** (4.909 linhas; eram 145 e 87%).
+`core/tests/test_carimbo_tsa.py` (8 testes: B-T, só o resumo vai para a TSA, carimbo do documento, carimbo sobre
+assinatura, erros da TSA, política do job sensível, TSA vinda da configuração, assinatura sem carimbo continua B-B).
+**Rodada completa antes do carimbo (17/09/2026 19:11): 169 testes passando, 0 falhas, cobertura 87%**
+Depois do carimbo, os arquivos afetados foram repetidos (20:15): carimbo 8/8, segurança 11/11, A3 16/16, vigia 9/9.
+Um teste antigo precisou mudar: `timestamp` sem TSA agora responde `E_ENTRADA` (pedindo a TSA) no lugar do antigo
+`E_SEM_SUPORTE`. (4.909 linhas; eram 145 e 87%).
 Os 9 do vigia foram repetidos depois da correção do laço: verdes. A suíte levou 35 min contra 12 min da rodada
 anterior — a máquina estava disputada (Rhino e Chrome abertos), não houve mudança de desempenho no PAPIRO.
 
 ## 5. Continua NÃO implementado
-carimbo do tempo TSA e LTV · JSignPdf · tradução com layout (RF-608) · alt-text por visão (RF-609) · decks Touying
+LTV B-LT/B-LTA (`ltv_update`) · JSignPdf · tradução com layout (RF-608) · alt-text por visão (RF-609) · decks Touying
 (RF-501..506) · Docling/PaddleOCR-VL · `conform` pdfua/pdfx/remediate · XFDF · criação/detecção de campos
 (RF-701/702) · Vega-Lite (RF-305) · docx/epub/dxf · embeddings no RAG · Tesseract 5 no Linux · RNF-10 (mesmo hash)
 **não verificado** · Windows não testado.
@@ -85,4 +114,6 @@ carimbo do tempo TSA e LTV · JSignPdf · tradução com layout (RF-608) · alt-
 4. Assinar com o token A3 de verdade: conecte o token, `papiro token` para ver o rótulo, e `sign token=... pin_ref=prompt`.
    Depois confira o PDF em `validar.iti.gov.br` (homologação do PRD §12) — é o passo que falta para o A3 sair de
    "testado com token de software" para "homologado".
-5. Próximos itens de maior valor: carimbo do tempo (TSA) → Vega-Lite (RF-305) → `conform` pdfua/remediate.
+5. Carimbar com uma TSA de verdade: `sign ... carimbo=true tsa="https://freetsa.org/tsr"` (ou a da sua ACT) e
+   conferir o PDF em `validar.iti.gov.br`.
+6. Próximos itens de maior valor: LTV (B-LT/B-LTA) → Vega-Lite (RF-305) → `conform` pdfua/remediate.

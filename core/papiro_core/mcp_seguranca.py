@@ -5,9 +5,9 @@ Regras §12: operacao sensivel exige confirm=true; documento reprovado nos porto
 e PIN de token (A3) nunca entram como argumento - vem de keyring, variavel de ambiente ou do terminal no ato - e nunca
 vao para log; verificacao sempre local (allow_fetching=False); retangulo preto sem remocao e proibido."""
 from __future__ import annotations
-import contextlib, json, os, pathlib, sys
+import contextlib, json, os, pathlib, sys, urllib.parse
 from mcp.server.fastmcp import FastMCP
-from . import FONTS, REPO, config
+from . import FONTS, REPO, WORK, config
 from .caminhos import nome_seguro
 from .erros import PapiroErro
 from .runner import Contexto, Resultado, executar
@@ -88,6 +88,46 @@ def _pin(pin_ref: str) -> str:
             raise PapiroErro("E_SENHA", "PIN vazio")
         return valor
     return _segredo(pin_ref)
+
+
+def _tsa_config() -> dict:
+    a = config.carregar().get("assinatura", {})
+    return {"url": os.environ.get("PAPIRO_TSA_URL") or a.get("tsa_url", ""), "usuario": a.get("tsa_usuario", ""),
+            "senha_ref": a.get("tsa_senha_ref", ""), "timeout": float(a.get("tsa_timeout_s", 15))}
+
+
+def _erro_tsa(e: Exception, servidor: str) -> PapiroErro:
+    nome, texto = type(e).__name__, str(e)
+    if "timeout" in nome.lower() or "timeout" in texto.lower() or "timed out" in texto.lower():
+        return PapiroErro("E_TEMPO", f"a TSA {servidor} nao respondeu a tempo")
+    if any(x in nome for x in ("ClientConnector", "ServerDisconnected", "ClientOS", "Resolve")):
+        return PapiroErro("E_MOTOR", f"nao consegui falar com a TSA {servidor} ({nome}): confira a rede e a URL")
+    return PapiroErro("E_MOTOR", f"TSA {servidor}: {nome} {texto[:160]}")
+
+
+def _carimbador(tsa: str, rede_tsa: bool):
+    """Carimbador RFC 3161. O documento NUNCA sai da maquina: so o resumo SHA-256 dele vai para a TSA.
+
+    Mesmo assim e uma chamada de rede, entao em job sensivel (§12.5) ela so acontece com rede_tsa=true explicito."""
+    cfg = _tsa_config()
+    url = (tsa or cfg["url"]).strip()
+    if not url:
+        raise PapiroErro("E_ENTRADA", "carimbo do tempo precisa de uma TSA: passe tsa='https://...' ou configure "
+                                      "[assinatura] tsa_url no papiro.toml")
+    if not url.lower().startswith(("http://", "https://")):
+        raise PapiroErro("E_ENTRADA", f"tsa deve ser a URL http(s) de um servidor RFC 3161 (recebi {url!r})")
+    servidor = urllib.parse.urlsplit(url).netloc or url
+    sensivel = (WORK / "_sensivel.flag").exists() or os.environ.get("PAPIRO_SENSIVEL") == "1"
+    if sensivel and not rede_tsa:
+        raise PapiroErro("E_POLITICA", f"job sensivel nao fala com servico on-line (§12.5). O carimbo envia apenas o "
+                                       f"resumo SHA-256 do documento para {servidor} - o documento nao sai da maquina. "
+                                       f"Para aceitar, repita com rede_tsa=true.")
+    from pyhanko.sign.timestamps import HTTPTimeStamper
+    auth = (cfg["usuario"], _segredo(cfg["senha_ref"])) if cfg["usuario"] and cfg["senha_ref"] else None
+    carimbador = HTTPTimeStamper(url, https=url.lower().startswith("https://"), timeout=cfg["timeout"], auth=auth)
+    aviso = (f"carimbo do tempo: so o resumo SHA-256 do documento foi enviado a {servidor}; "
+             "o conteudo do documento nao saiu da maquina")
+    return carimbador, servidor, [aviso]
 
 
 def tokens_conectados(lib_location: str) -> list[dict]:
@@ -243,7 +283,8 @@ def _area_livre(pdf: pathlib.Path, pagina: int, caixa_pdf: tuple[float, float, f
 
 
 def _assinar(ctx: Contexto, cred: dict, certificar: bool, visivel: bool, pagina: int, caixa: str,
-             nome_campo: str, motivo: str, local: str, crm: str, url_validacao: str, exigir_qa: bool) -> Resultado:
+             nome_campo: str, motivo: str, local: str, crm: str, url_validacao: str, exigir_qa: bool,
+             carimbo: bool = False, tsa: str = "", rede_tsa: bool = False) -> Resultado:
     from pyhanko import stamp
     from pyhanko.pdf_utils.font.opentype import GlyphAccumulatorFactory
     from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
@@ -275,23 +316,35 @@ def _assinar(ctx: Contexto, cred: dict, certificar: bool, visivel: bool, pagina:
                                         location=local or None,
                                         docmdp_permissions=fields.MDPPerm.FILL_FORMS)
     out = ctx.saida(("certificado" if certificar else "assinado") + ".pdf")
+    carimbador, servidor, avisos = (None, None, [])
+    if carimbo or tsa:
+        carimbador, servidor, avisos = _carimbador(tsa, rede_tsa)
     with _abrir_credencial(ctx, cred) as (signer, descricao):
         try:
             with open(entrada, "rb") as inf, open(out, "wb") as outf:
                 w = IncrementalPdfFileWriter(inf, strict=False)
-                signers.PdfSigner(meta, signer=signer, stamp_style=estilo, new_field_spec=spec).sign_pdf(
+                signers.PdfSigner(meta, signer=signer, stamp_style=estilo, new_field_spec=spec,
+                                  timestamper=carimbador).sign_pdf(
                     w, output=outf, appearance_text_params={"url": url_validacao} if url_validacao else None)
         except PapiroErro:
             raise
-        except Exception as e:  # noqa: BLE001 - falha do token no meio da assinatura
+        except Exception as e:  # noqa: BLE001 - falha do token ou da TSA no meio da assinatura
             if cred["tipo"] == "a3" and type(e).__module__.startswith("pkcs11"):
                 raise _erro_pkcs11(e)
+            if carimbador is not None and type(e).__module__.split(".")[0] in ("pyhanko", "aiohttp", "asyncio"):
+                raise _erro_tsa(e, servidor)
             raise
     verif = _verificar(out)
     if not verif or not all(s["intacta"] and s["valida"] for s in verif):
         raise PapiroErro("E_CONFORMIDADE", "assinatura gerada nao passou na verificacao local")
-    return Resultado(outputs=[out], motor="pyhanko", dados={"perfil": "PAdES-B-B", "certificado": certificar,
-                                                             "credencial": descricao, "verificacao": verif})
+    if carimbador is not None and not any(s.get("carimbo") for s in verif):
+        raise PapiroErro("E_CONFORMIDADE", f"a TSA {servidor} respondeu, mas o carimbo nao ficou no documento")
+    dados = {"perfil": "PAdES-B-T" if carimbador is not None else "PAdES-B-B", "certificado": certificar,
+             "credencial": descricao, "verificacao": verif}
+    if carimbador is not None:
+        dados["carimbo"] = {"tsa": servidor, **(verif[-1].get("carimbo") or {})}
+    return Resultado(outputs=[out], motor="pyhanko" + ("+rfc3161" if carimbador is not None else ""),
+                     dados=dados, warnings=avisos)
 
 
 def _e_a3(token: str, modulo: str, pin_ref: str, rotulo: str, id_chave: str, slot: int | None) -> bool:
@@ -323,9 +376,19 @@ def _raizes() -> list:
     return list(load_certs_from_pemder([str(p) for p in arquivos])) if arquivos else []
 
 
+def _carimbo_dict(st) -> dict | None:
+    """Carimbo do tempo de uma assinatura: quando a TSA atestou e se o carimbo esta intacto."""
+    if st is None:
+        return None
+    return {"tempo": str(st.timestamp) if getattr(st, "timestamp", None) else None,
+            "intacto": bool(st.intact), "valido": bool(st.valid),
+            "autoridade": st.signing_cert.subject.human_friendly if st.signing_cert else None,
+            "algoritmo": getattr(st, "md_algorithm", None)}
+
+
 def _verificar(pdf: pathlib.Path) -> list[dict]:
     from pyhanko.pdf_utils.reader import PdfFileReader
-    from pyhanko.sign.validation import validate_pdf_signature
+    from pyhanko.sign.validation import validate_pdf_signature, validate_pdf_timestamp
     from pyhanko_certvalidator import ValidationContext
     raizes = _raizes()
     saida = []
@@ -333,16 +396,21 @@ def _verificar(pdf: pathlib.Path) -> list[dict]:
         leitor = PdfFileReader(fh, strict=False)
         for sig in leitor.embedded_signatures:
             vc = ValidationContext(trust_roots=raizes or None, allow_fetching=False, revocation_mode="soft-fail")
-            st = validate_pdf_signature(sig, vc)
-            saida.append({
-                "campo": sig.field_name, "intacta": bool(st.intact), "valida": bool(st.valid),
-                "confiavel": bool(st.trusted), "cobertura": getattr(st.coverage, "name", str(st.coverage)),
-                "modificacao": getattr(st.modification_level, "name", None),
+            so_carimbo = str(getattr(sig, "sig_object_type", "")) == "/DocTimeStamp"
+            st = validate_pdf_timestamp(sig, vc) if so_carimbo else validate_pdf_signature(sig, vc)
+            item = {
+                "campo": sig.field_name, "tipo": "carimbo_do_documento" if so_carimbo else "assinatura",
+                "intacta": bool(st.intact), "valida": bool(st.valid),
+                "confiavel": bool(st.trusted), "cobertura": getattr(getattr(st, "coverage", None), "name", None),
+                "modificacao": getattr(getattr(st, "modification_level", None), "name", None),
                 "signatario": st.signing_cert.subject.human_friendly if st.signing_cert else None,
                 "emissor": st.signing_cert.issuer.human_friendly if st.signing_cert else None,
-                "data_declarada": str(st.signer_reported_dt) if st.signer_reported_dt else None,
-                "algoritmo": st.md_algorithm, "resumo": st.bottom_line,
-                "ancoras": "ICP-Brasil carregadas" if raizes else "nenhuma ancora carregada: confiavel sempre falso"})
+                "data_declarada": str(st.signer_reported_dt) if getattr(st, "signer_reported_dt", None) else None,
+                "algoritmo": getattr(st, "md_algorithm", None), "resumo": getattr(st, "bottom_line", None),
+                "ancoras": "ICP-Brasil carregadas" if raizes else "nenhuma ancora carregada: confiavel sempre falso"}
+            item["carimbo"] = (_carimbo_dict(st) if so_carimbo
+                               else _carimbo_dict(getattr(st, "timestamp_validity", None)))
+            saida.append(item)
     return saida
 
 
@@ -351,39 +419,67 @@ def _verificar(pdf: pathlib.Path) -> list[dict]:
 def sign(entrada: str, out_dir: str, pfx: str = "", senha_ref: str = "", confirm: bool = False, visivel: bool = False,
          pagina: int = 1, caixa: str = "", crm: str = "", url_validacao: str = "https://validar.iti.gov.br",
          motivo: str = "", local: str = "", nome_campo: str = "Assinatura1", token: str = "", modulo: str = "",
-         pin_ref: str = "", rotulo: str = "", id_chave: str = "", slot: int | None = None,
-         dry_run: bool = False) -> dict:
-    """RF-806 PAdES-B-B. A1: pfx= + senha_ref='env:NOME'|'keyring:servico/usuario'.
+         pin_ref: str = "", rotulo: str = "", id_chave: str = "", slot: int | None = None, carimbo: bool = False,
+         tsa: str = "", rede_tsa: bool = False, dry_run: bool = False) -> dict:
+    """RF-806 PAdES-B-B (ou B-T com carimbo do tempo). A1: pfx= + senha_ref='env:NOME'|'keyring:servico/usuario'.
     A3 (token/cartao ICP-Brasil): token=<rotulo do token> e/ou modulo=<biblioteca PKCS#11> + pin_ref=(env:|keyring:|prompt);
-    rotulo=/id_chave= escolhem o certificado quando o token tem mais de um. O PIN nunca e gravado nem vai para log."""
+    rotulo=/id_chave= escolhem o certificado quando o token tem mais de um. O PIN nunca e gravado nem vai para log.
+    carimbo=true (ou tsa='https://...') acrescenta carimbo do tempo RFC 3161 -> PAdES-B-T; so o resumo SHA-256 vai a TSA."""
     def acao(ctx):
         _confirmar("sign", confirm)
         cred = _credencial(pfx, senha_ref, token, modulo, pin_ref, rotulo, id_chave, slot)
         return _assinar(ctx, cred, False, visivel, pagina, caixa, nome_campo, motivo, local, crm,
-                        url_validacao if visivel else "", exigir_qa=True)
-    return executar("sign", "pades-b-b" + ("-a3" if _e_a3(token, modulo, pin_ref, rotulo, id_chave, slot) else ""), acao,
+                        url_validacao if visivel else "", exigir_qa=True, carimbo=carimbo, tsa=tsa, rede_tsa=rede_tsa)
+    perfil = "pades-b-t" if (carimbo or tsa) else "pades-b-b"
+    return executar("sign", perfil + ("-a3" if _e_a3(token, modulo, pin_ref, rotulo, id_chave, slot) else ""), acao,
                     entradas=[entrada] + ([pfx] if pfx else []), out_dir=out_dir, tarefa="assinatura", dry_run=dry_run)
 
 
 @mcp.tool()
 def certify(entrada: str, out_dir: str, pfx: str = "", senha_ref: str = "", confirm: bool = False,
             nome_campo: str = "Certificacao", token: str = "", modulo: str = "", pin_ref: str = "", rotulo: str = "",
-            id_chave: str = "", slot: int | None = None, dry_run: bool = False) -> dict:
-    """Assinatura de certificacao DocMDP (permite so preenchimento e novas assinaturas). A1 (pfx) ou A3 (token), como em sign."""
+            id_chave: str = "", slot: int | None = None, carimbo: bool = False, tsa: str = "", rede_tsa: bool = False,
+            dry_run: bool = False) -> dict:
+    """Assinatura de certificacao DocMDP (permite so preenchimento e novas assinaturas). A1 (pfx) ou A3 (token) e
+    carimbo do tempo opcional, como em sign."""
     def acao(ctx):
         _confirmar("certify", confirm)
         cred = _credencial(pfx, senha_ref, token, modulo, pin_ref, rotulo, id_chave, slot)
-        return _assinar(ctx, cred, True, False, 1, "", nome_campo, "Certificacao", "", "", "", exigir_qa=True)
+        return _assinar(ctx, cred, True, False, 1, "", nome_campo, "Certificacao", "", "", "", exigir_qa=True,
+                        carimbo=carimbo, tsa=tsa, rede_tsa=rede_tsa)
     return executar("certify", "docmdp", acao, entradas=[entrada] + ([pfx] if pfx else []), out_dir=out_dir,
                     tarefa="assinatura", dry_run=dry_run)
 
 
 @mcp.tool()
-def timestamp(entrada: str, out_dir: str, confirm: bool = False, dry_run: bool = False) -> dict:
-    """RFC 3161: sem suporte nesta versao (exige TSA configurada e acesso a rede; job sensivel e soberano)."""
-    def acao(_ctx):
+def timestamp(entrada: str, out_dir: str, confirm: bool = False, tsa: str = "", rede_tsa: bool = False,
+              nome_campo: str = "Carimbo1", dry_run: bool = False) -> dict:
+    """Carimbo do tempo RFC 3161 do documento inteiro (DocTimeStamp), sem assinar: prova que ele existia naquela hora.
+
+    tsa='https://...' ou [assinatura] tsa_url no papiro.toml. Só o resumo SHA-256 vai para a TSA - o documento não sai
+    da máquina. Em job sensível, a chamada de rede exige rede_tsa=true (§12.5). Para carimbar junto com a assinatura
+    (PAdES-B-T), use sign com carimbo=true."""
+    def acao(ctx):
         _confirmar("timestamp", confirm)
-        raise PapiroErro("E_SEM_SUPORTE", "carimbo do tempo exige TSA RFC 3161 configurada em papiro.toml [assinatura]")
+        from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
+        from pyhanko.sign import signers
+        carimbador, servidor, avisos = _carimbador(tsa, rede_tsa)
+        out = ctx.saida("carimbado.pdf")
+        try:
+            with open(ctx.entradas[0], "rb") as inf, open(out, "wb") as outf:
+                w = IncrementalPdfFileWriter(inf, strict=False)
+                signers.PdfTimeStamper(carimbador, field_name=nome_campo).timestamp_pdf(w, "sha256", output=outf)
+        except PapiroErro:
+            raise
+        except Exception as e:  # noqa: BLE001 - falha da TSA ou da rede
+            raise _erro_tsa(e, servidor)
+        verif = _verificar(out)
+        carimbos = [v for v in verif if v["tipo"] == "carimbo_do_documento"]
+        if not carimbos or not all(c["intacta"] for c in carimbos):
+            raise PapiroErro("E_CONFORMIDADE", f"a TSA {servidor} respondeu, mas o carimbo nao ficou intacto no documento")
+        return Resultado(outputs=[out], motor="pyhanko+rfc3161", warnings=avisos,
+                         dados={"perfil": "DocTimeStamp (RFC 3161)", "tsa": servidor,
+                                "carimbo": carimbos[-1]["carimbo"], "verificacao": verif})
     return executar("timestamp", "rfc3161", acao, entradas=[entrada], out_dir=out_dir, tarefa="assinatura", dry_run=dry_run)
 
 

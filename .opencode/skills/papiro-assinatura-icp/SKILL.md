@@ -53,11 +53,22 @@ A verificação de rotina é local; nenhum documento de paciente é enviado a va
   (`pin_ref="prompt"`, só em terminal). Nunca peça o PIN no chat. PIN errado gasta tentativa — o token bloqueia.
 - A chave privada nunca sai do token: o PAPIRO manda o hash e recebe a assinatura.
 
+**Carimbo do tempo RFC 3161 (PAdES-B-T):** `sign ... carimbo=true` (ou `tsa="https://..."`) acrescenta o carimbo
+à assinatura. `timestamp entrada=... tsa=...` carimba o documento inteiro sem assinar (DocTimeStamp) e pode ser
+aplicado depois, sobre um PDF já assinado, sem quebrar a assinatura.
+- A TSA sai de `tsa=` ou de `[assinatura] tsa_url` no `papiro.toml` (com `tsa_usuario`/`tsa_senha_ref` se ela exigir
+  autenticação). Carimbo de ACT credenciada na ICP-Brasil costuma ser pago — por isso é opcional.
+- **Só o resumo SHA-256 do documento vai para a TSA**; o conteúdo nunca sai da máquina. Ainda assim é rede: em job
+  sensível a chamada é recusada (E_POLITICA) até vir `rede_tsa=true` explícito (§12.5). O envelope traz um aviso
+  dizendo exatamente o que foi enviado e para qual servidor.
+- O envelope mostra `dados.carimbo` com a hora atestada, a autoridade e se o carimbo está íntegro; `verify` também
+  passa a listar o carimbo de cada assinatura e os carimbos de documento.
+
 Valem para A1 e A3:
 - A senha/PIN NUNCA vai como argumento: só referência a variável de ambiente ou chaveiro.
 - Documento reprovado nos portões não é assinado (E_POLITICA). Aparência sobre conteúdo é recusada.
-- `certify` = DocMDP (permite só preenchimento e novas assinaturas). Aceita A1 e A3.
-- Sem suporte ainda: carimbo do tempo (TSA), LTV B-LT/B-LTA, JSignPdf.
+- `certify` = DocMDP (permite só preenchimento e novas assinaturas). Aceita A1, A3 e carimbo.
+- Sem suporte ainda: LTV B-LT/B-LTA (`ltv_update`) e JSignPdf.
 - Homologação: a cada troca de certificado, conferir um documento de teste sem dados de paciente no validar.iti.gov.br.
 
 Fonte canônica: `docs/PAPIRO_PRD_ORIGINAL.md` (trechos acima copiados verbatim) e `docs/AGENTE_AUTONOMO_ENGENHARIA_PDF.md`. Ferramentas do MCP `papiro` respondem no envelope §8.1 (`ok`, `job_id`, `outputs`, `engine`, `qa`, `error`). Nunca declarar sucesso com `ok=false`.
