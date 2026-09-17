@@ -66,6 +66,19 @@ Recursos do executor de receitas:
   `rubrica: ...` (vira aviso: a rubrica é do pdf-revisor-qa).
 - RF-908: `op=save job_ids="<id1>,<id2>" nome=<nome>` gera a receita YAML dos jobs concluídos (encadeia saídas e troca
   conteúdo omitido por `$dados`). Reprodução do mesmo hash de saída: **não verificada**.
-- Receitas prontas: `recipes/atestado-pdfa.yaml`, `recipes/lote-certificados.yaml`, `recipes/exemplo-receituario-assinado.yaml`.
+- Receitas prontas: `recipes/atestado-pdfa.yaml`, `recipes/lote-certificados.yaml`, `recipes/exemplo-receituario-assinado.yaml`,
+  `recipes/entrada-ocr-pdfa.yaml` (a das pastas monitoradas: OCR → PDF/A-2b → veraPDF → 11 portões).
+
+## Pastas monitoradas (RF-906) — `recipes op=watch`
+- Configuração em `papiro.toml`: um bloco `[[pastas]]` por pasta, com `nome`, `entrada`, `receita`, `campo`
+  (o dado que recebe o caminho do arquivo), `padrao`, `estavel_s` e `ao_terminar` (`nada` | `mover`).
+- `recipes op=watch` faz **uma passada** (útil no chat e no Agendador); `papiro vigiar` fica observando com watchdog.
+  `op=watch_status` mostra fila, pendentes e falhas. `nome=` limita a uma pasta; `reprocessar=true` refaz o já visto.
+- Só processa arquivo que parou de crescer (`estavel_s`), ignora `.part`/`.tmp`/ocultos e **não repete** o mesmo
+  conteúdo (dedup por SHA-256 em `logs/jobs.db`) — nem quando deu errado, para não ficar em laço; o que falhou fica
+  listado em `falhas` e só roda de novo com `reprocessar=true`.
+- O original nunca é alterado: com `ao_terminar="mover"` ele vai para `processados/` (ou `falhas/`), sem sobrescrever.
+- **Nunca assina nem tarja sozinha:** receita com `confirmacao` ou passo `papiro-seguranca.*` fica
+  `aguardando_confirmacao`/`aguardando_seguranca`, o arquivo continua na pasta e a decisão volta para o usuário.
 
 Fonte canônica: `docs/PAPIRO_PRD_ORIGINAL.md` (trechos acima copiados verbatim) e `docs/AGENTE_AUTONOMO_ENGENHARIA_PDF.md`. Ferramentas do MCP `papiro` respondem no envelope §8.1 (`ok`, `job_id`, `outputs`, `engine`, `qa`, `error`). Nunca declarar sucesso com `ok=false`.

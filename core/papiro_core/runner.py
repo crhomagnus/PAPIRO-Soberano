@@ -71,7 +71,7 @@ def _argumentos_do_chamador(frame) -> dict:
     sensivel = (WORK / "_sensivel.flag").exists() or os.environ.get("PAPIRO_SENSIVEL") == "1"
     args = {}
     for nome in info.args:
-        if nome not in info.locals or "senha" in nome or nome in ("dry_run",):
+        if nome not in info.locals or "senha" in nome or "pin" in nome or nome in ("dry_run",):
             continue
         valor = info.locals[nome]
         if isinstance(valor, str) and (nome in _CONTEUDO or (sensivel and ("/" in valor or "\\" in valor))):

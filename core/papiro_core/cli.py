@@ -6,7 +6,7 @@
   papiro chamar <ferramenta> '<json de argumentos>'        # qualquer uma das 48
   papiro inspecionar|ocr|otimizar|qa|comparar ...          # atalhos"""
 from __future__ import annotations
-import json, sys
+import json, pathlib, sys
 import typer
 from . import OUT
 from . import mcp_seguranca as SEG, mcp_server as SRV
@@ -94,6 +94,43 @@ def qa(arquivo: str, out_dir: str = "", design: bool = False, nota_visual: float
        padrao: str = ""):
     """Portoes G1-G11."""
     _imprimir(SRV.qa_run(arquivo, _out(out_dir), design=design, nota_visual=nota_visual, padrao=padrao))
+
+
+@app.command()
+def vigiar(pasta: str = "", uma_vez: bool = False, intervalo: float = 5.0, tempo_limite: float = 0.0,
+           reprocessar: bool = False, estado: bool = False):
+    """RF-906: fica observando as pastas do papiro.toml e roda a receita de cada uma no arquivo que chegar.
+
+    --uma-vez processa o que ja esta la e sai (bom para o Agendador do Windows, RF-907); --estado so mostra a situacao."""
+    from . import vigia as VIG
+    if estado:
+        _imprimir({"ok": True, **VIG.estado(pasta)})
+    elif uma_vez:
+        _imprimir({"ok": True, **VIG.varredura(pasta, reprocessar=reprocessar)})
+    else:
+        typer.echo(f"vigiando (Ctrl+C para parar; varredura de seguranca a cada {intervalo:g}s)...", err=True)
+        _imprimir({"ok": True, **VIG.vigiar(pasta, intervalo=intervalo, tempo_limite=tempo_limite,
+                                            ao_criar=lambda r: typer.echo(
+                                                f"  {r['status']:22} {pathlib.Path(r['arquivo']).name}", err=True))})
+
+
+@app.command()
+def token(modulo: str = "", pin_ref: str = "prompt", certificados: bool = True):
+    """Token A3: lista os tokens conectados e os certificados gravados (para saber o que usar em `sign`).
+
+    O PIN e pedido no ato (pin_ref='prompt') e nunca e gravado. Sem --certificados, nem pede PIN."""
+    lib = SEG._modulo_pkcs11(modulo)
+    saida = {"ok": True, "modulo": lib, "tokens": SEG.tokens_conectados(lib)}
+    if certificados:
+        from pyhanko.sign import pkcs11 as p11
+        for t in saida["tokens"]:
+            sessao = p11.open_pkcs11_session(lib, token_criteria=SEG._criterio_token(lib, t["rotulo"], None),
+                                             user_pin=SEG._pin(pin_ref))
+            try:
+                t["certificados"] = SEG.certificados_do_token(sessao)
+            finally:
+                sessao.close()
+    _imprimir(saida)
 
 
 @app.command()

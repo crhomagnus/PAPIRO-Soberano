@@ -1,0 +1,32 @@
+receita: entrada-ocr-pdfa
+versao: 1
+descricao: >-
+  Pasta monitorada (RF-906): todo PDF que cair na pasta ganha camada de texto (OCR so nas paginas que
+  precisam), vira PDF/A-2b e so sai se passar no veraPDF e nos 11 portoes. Nada e assinado nem tarjado aqui.
+sensivel: true
+entradas:
+  entrada: {tipo: arquivo, obrigatoria: true}
+passos:
+  - id: triagem
+    ferramenta: inspect
+    com: {op: risk, entrada: $dados.entrada}
+    exige: {ok: true}
+  - id: reconhecer
+    ferramenta: ocr
+    com: {entrada: $dados.entrada, idioma: por, pdfa: true, saida: pesquisavel.pdf}
+    exige: {ok: true}
+  - id: conformar
+    ferramenta: conform
+    com: {op: pdfa, padrao: PDF/A-2b, qa: false}
+    exige: {ok: true}
+  - id: validar
+    ferramenta: validate
+    com: {padrao: PDF/A-2b}
+    exige: {verapdf: aprovado}
+  - id: revisar
+    ferramenta: qa_run
+    exige: {qa: APROVADO}
+saida:
+  pasta: out/recebidos/{data}
+  nome: pesquisavel-{id_pseudonimo}.pdf
+  de: conformar

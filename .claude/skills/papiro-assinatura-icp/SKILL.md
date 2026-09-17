@@ -39,12 +39,25 @@ A verificação de rotina é local; nenhum documento de paciente é enviado a va
 | Proibições | Assinar sem confirmação; gravar PIN ou senha; assinar documento reprovado nos portões |
 
 ## Ferramenta real (servidor papiro-seguranca, só no subagente pdf-seguranca)
-`sign entrada=... out_dir=... pfx=<arquivo .pfx> senha_ref="env:NOME" | "keyring:servico/usuario" confirm=true
- visivel=true caixa="x0,y0,x1,y1" crm="00000-UF"` → PAdES-B-B, SHA-256, verificação local logo após assinar.
-- A senha NUNCA vai como argumento: só referência a variável de ambiente ou chaveiro.
+**A1 (arquivo PFX):** `sign entrada=... out_dir=... pfx=<arquivo .pfx> senha_ref="env:NOME" | "keyring:servico/usuario"
+ confirm=true visivel=true caixa="x0,y0,x1,y1" crm="00000-UF"` → PAdES-B-B, SHA-256, verificação local logo após assinar.
+
+**A3 (token ou cartão, via PKCS#11):** `sign entrada=... out_dir=... token="<rótulo do token>" modulo="<biblioteca PKCS#11>"
+ pin_ref="env:NOME" | "keyring:servico/usuario" | "prompt" confirm=true` (mesmas opções de aparência).
+- Descubra o que existe no token antes: `papiro token` lista tokens conectados e os certificados de cada um
+  (rótulo, id, titular, validade). Com um único token conectado, `token=` é dispensável; com vários, é obrigatório.
+- `modulo` sai do driver do fabricante (SafeNet `eTPKCS11.dll`, Watchdata `WDPKCS.dll`, OpenSC `opensc-pkcs11.so`).
+  Pode ficar fixo em `papiro.toml [assinatura] pkcs11_modulo`. Se o token tiver mais de um certificado, escolha
+  com `rotulo=` ou `id_chave=` — a mensagem de erro lista os disponíveis.
+- **O PIN nunca é argumento nem fica gravado:** vem de variável de ambiente, do chaveiro, ou é digitado no ato
+  (`pin_ref="prompt"`, só em terminal). Nunca peça o PIN no chat. PIN errado gasta tentativa — o token bloqueia.
+- A chave privada nunca sai do token: o PAPIRO manda o hash e recebe a assinatura.
+
+Valem para A1 e A3:
+- A senha/PIN NUNCA vai como argumento: só referência a variável de ambiente ou chaveiro.
 - Documento reprovado nos portões não é assinado (E_POLITICA). Aparência sobre conteúdo é recusada.
-- `certify` = DocMDP (permite só preenchimento e novas assinaturas).
-- Sem suporte ainda: A3/PKCS#11, carimbo do tempo (TSA), LTV B-LT/B-LTA, JSignPdf.
+- `certify` = DocMDP (permite só preenchimento e novas assinaturas). Aceita A1 e A3.
+- Sem suporte ainda: carimbo do tempo (TSA), LTV B-LT/B-LTA, JSignPdf.
 - Homologação: a cada troca de certificado, conferir um documento de teste sem dados de paciente no validar.iti.gov.br.
 
 Fonte canônica: `docs/PAPIRO_PRD_ORIGINAL.md` (trechos acima copiados verbatim) e `docs/AGENTE_AUTONOMO_ENGENHARIA_PDF.md`. Ferramentas do MCP `papiro` respondem no envelope §8.1 (`ok`, `job_id`, `outputs`, `engine`, `qa`, `error`). Nunca declarar sucesso com `ok=false`.

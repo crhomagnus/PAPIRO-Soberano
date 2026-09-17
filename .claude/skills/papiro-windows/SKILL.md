@@ -31,4 +31,14 @@ O perfil ativo fica em `papiro.toml` e o roteador (seção 9) só oferece motore
 - Binários: `binfinder` procura em `bin\` (Windows) ou `bin/linux-x86_64` (Linux), depois PATH e Program Files.
 - Hooks: `.claude/settings.json` (PowerShell) no Windows; `.claude/settings.linux.json` (Python) no Linux.
 
+## Token A3 e pastas monitoradas no Windows
+- **Token/cartão A3 (RF-806):** o PAPIRO fala PKCS#11 com a biblioteca do driver do fabricante — SafeNet/eToken
+  `C:\Windows\System32\eTPKCS11.dll`, Watchdata `WDPKCS.dll`, SafeSign `aetpkss1.dll`, OpenSC `opensc-pkcs11.dll`.
+  Fixe a sua em `papiro.toml [assinatura] pkcs11_modulo` e confira com `papiro token`. Driver de 64 bits para Python
+  de 64 bits. O PIN é digitado no ato e nunca é gravado. **Não verificado no Windows** (implementado e testado no Linux).
+- **Agendamento (RF-907):** a tarefa do Agendador chama `papiro vigiar --uma-vez` (uma passada e sai). Para deixar
+  vigiando o tempo todo, `papiro vigiar` numa janela ou como tarefa "ao iniciar o sistema". Cada execução fica no log.
+- Pasta monitorada em unidade de rede: prefira caminho UNC liberado em `[caminhos] liberadas` e aumente `estavel_s`
+  (cópia pela rede demora a terminar).
+
 Fonte canônica: `docs/PAPIRO_PRD_ORIGINAL.md` (trechos acima copiados verbatim) e `docs/AGENTE_AUTONOMO_ENGENHARIA_PDF.md`. Ferramentas do MCP `papiro` respondem no envelope §8.1 (`ok`, `job_id`, `outputs`, `engine`, `qa`, `error`). Nunca declarar sucesso com `ok=false`.

@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS receita_passos(execucao TEXT, passo TEXT, status TEXT
     saida TEXT, atualizado TEXT, PRIMARY KEY(execucao, passo));
 CREATE TABLE IF NOT EXISTS receita_execucoes(execucao TEXT PRIMARY KEY, receita TEXT, receita_sha TEXT, dados_sha TEXT,
     status TEXT, passo TEXT, sensivel INT, criado TEXT, atualizado TEXT);
+CREATE TABLE IF NOT EXISTS vigia_arquivos(pasta TEXT, sha256 TEXT, arquivo TEXT, status TEXT, execucao TEXT,
+    erro TEXT, segundos REAL, movido TEXT, criado TEXT, atualizado TEXT, PRIMARY KEY(pasta, sha256));
 """
 
 
@@ -160,3 +162,35 @@ def execucao_ler(execucao: str) -> dict | None:
     return {"execucao": execucao, "receita": r[0], "receita_sha": r[1], "dados_sha": r[2], "status": r[3], "passo": r[4],
             "sensivel": bool(r[5]), "criado": r[6], "atualizado": r[7],
             "passos": [{"passo": p, "status": st, "saida": json.loads(sa or "{}"), "atualizado": at} for p, st, sa, at in passos]}
+
+
+# ---- RF-906: arquivos ja vistos pelas pastas monitoradas (dedup por conteudo) ----
+def vigia_registrar(pasta: str, sha: str, arquivo: str, status: str, execucao: str | None = None,
+                    erro: str | None = None, segundos: float | None = None, movido: str | None = None):
+    agora = utcnow_iso()
+    with _con() as c:
+        r = c.execute("SELECT criado FROM vigia_arquivos WHERE pasta=? AND sha256=?", (pasta, sha)).fetchone()
+        c.execute("INSERT OR REPLACE INTO vigia_arquivos VALUES(?,?,?,?,?,?,?,?,?,?)",
+                  (pasta, sha, arquivo, status, execucao, erro, segundos, movido, r[0] if r else agora, agora))
+
+
+def _linha_vigia(r) -> dict:
+    return {"pasta": r[0], "sha256": r[1], "arquivo": r[2], "status": r[3], "execucao": r[4], "erro": r[5],
+            "segundos": r[6], "movido": r[7], "criado": r[8], "atualizado": r[9]}
+
+
+_COLUNAS_VIGIA = "pasta, sha256, arquivo, status, execucao, erro, segundos, movido, criado, atualizado"
+
+
+def vigia_buscar(pasta: str, sha: str) -> dict | None:
+    with _con() as c:
+        r = c.execute(f"SELECT {_COLUNAS_VIGIA} FROM vigia_arquivos WHERE pasta=? AND sha256=?", (pasta, sha)).fetchone()
+    return _linha_vigia(r) if r else None
+
+
+def vigia_listar(pasta: str = "", limite: int = 50) -> list[dict]:
+    sql = (f"SELECT {_COLUNAS_VIGIA} FROM vigia_arquivos" + (" WHERE pasta=?" if pasta else "")
+           + " ORDER BY atualizado DESC LIMIT ?")
+    with _con() as c:
+        linhas = c.execute(sql, ((pasta, limite) if pasta else (limite,))).fetchall()
+    return [_linha_vigia(r) for r in linhas]

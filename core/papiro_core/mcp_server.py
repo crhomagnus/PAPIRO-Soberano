@@ -876,9 +876,10 @@ def jobs(op: str, job_id: str = "", pedido: str = "", limite: int = 20) -> dict:
 @mcp.tool()
 def recipes(op: str, out_dir: str = "", arquivo: str = "", dados_json: str = "", dados_arquivo: str = "",
             execucao: str = "", confirmados: str = "", externos_json: str = "", job_ids: str = "", nome: str = "",
-            dry_run: bool = False) -> dict:
+            reprocessar: bool = False, limite: int = 0, dry_run: bool = False) -> dict:
     """§9.3 receitas YAML. op=list | validate (arquivo) | run (arquivo + dados; checkpoints, cache por hash, exige,
-    se/para_cada/paralelo, confirmacao) | status (execucao) | cancel (execucao) | save (job_ids + nome; RF-908).
+    se/para_cada/paralelo, confirmacao) | status (execucao) | cancel (execucao) | save (job_ids + nome; RF-908)
+    | watch (RF-906: uma passada nas pastas monitoradas do papiro.toml; nome= limita a uma pasta) | watch_status.
     Retomar: run com execucao=<id>, confirmados='passo1,passo2' e externos_json com a saida dos passos papiro-seguranca."""
     from . import receitas as REC
     entradas = [x for x in (arquivo, dados_arquivo) if x]
@@ -911,6 +912,14 @@ def recipes(op: str, out_dir: str = "", arquivo: str = "", dados_json: str = "",
             return Resultado(motor="sqlite", dados=st)
         if op == "cancel":
             return Resultado(motor="sqlite", dados=REC.cancelar(execucao))
+        if op in ("watch", "watch_status"):
+            from . import vigia as VIG
+            if op == "watch_status":
+                return Resultado(motor="papiro", dados=VIG.estado(nome))
+            rel = VIG.varredura(nome, reprocessar=reprocessar, limite=limite)
+            avisos = [f"{i['arquivo']}: {i['status']}" for p in rel["pastas"] for i in p["arquivos"]
+                      if i["status"] in ("aguardando_confirmacao", "aguardando_seguranca", "falhou", "reprovado")]
+            return Resultado(motor="watchdog", dados=rel, warnings=avisos)
         if op == "save":
             ids = [x.strip() for x in job_ids.split(",") if x.strip()]
             if not ids:
