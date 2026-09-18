@@ -10,38 +10,46 @@ from papiro_core import WORK, config, mcp_seguranca as S
 from conftest import envelope_ok
 
 
-def _tsa_de_teste():
-    """Certificado de TSA (EKU timeStamping, como manda a RFC 3161) + carimbador local."""
-    from asn1crypto import keys as a_keys, x509 as a_x509
+def tsa_de_teste(emissor=None, url_crl: str = ""):
+    """Carimbador local com certificado de TSA (EKU timeStamping, como manda a RFC 3161).
+
+    Sem `emissor`, o certificado e autoassinado (basta para provar o carimbo). Com `emissor=(nome, chave)` ele e
+    emitido por aquela AC - e o que o LTV exige, porque la a cadeia da TSA tambem precisa fechar numa ancora."""
+    from asn1crypto import cms as a_cms, keys as a_keys, x509 as a_x509
     from cryptography import x509
     from cryptography.hazmat.primitives import hashes, serialization
     from cryptography.hazmat.primitives.asymmetric import rsa
     from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
     from pyhanko.sign.timestamps import DummyTimeStamper
+    from pyhanko_certvalidator.registry import SimpleCertificateStore
     chave = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     nome = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "Autoridade de Carimbo de Teste")])
     agora = datetime.datetime.now(datetime.timezone.utc)
-    cert = (x509.CertificateBuilder().subject_name(nome).issuer_name(nome).public_key(chave.public_key())
-            .serial_number(x509.random_serial_number()).not_valid_before(agora - datetime.timedelta(days=1))
-            .not_valid_after(agora + datetime.timedelta(days=30))
-            .add_extension(x509.BasicConstraints(ca=False, path_length=None), critical=True)
-            .add_extension(x509.KeyUsage(digital_signature=True, content_commitment=True, key_encipherment=False,
-                                         data_encipherment=False, key_agreement=False, key_cert_sign=False,
-                                         crl_sign=False, encipher_only=False, decipher_only=False), critical=True)
-            .add_extension(x509.ExtendedKeyUsage([ExtendedKeyUsageOID.TIME_STAMPING]), critical=True)
-            .sign(chave, hashes.SHA256()))
+    nome_emissor, chave_emissora = emissor if emissor else (nome, chave)
+    construtor = (x509.CertificateBuilder().subject_name(nome).issuer_name(nome_emissor).public_key(chave.public_key())
+                  .serial_number(x509.random_serial_number()).not_valid_before(agora - datetime.timedelta(days=1))
+                  .not_valid_after(agora + datetime.timedelta(days=30))
+                  .add_extension(x509.BasicConstraints(ca=False, path_length=None), critical=True)
+                  .add_extension(x509.KeyUsage(digital_signature=True, content_commitment=True, key_encipherment=False,
+                                               data_encipherment=False, key_agreement=False, key_cert_sign=False,
+                                               crl_sign=False, encipher_only=False, decipher_only=False), critical=True)
+                  .add_extension(x509.ExtendedKeyUsage([ExtendedKeyUsageOID.TIME_STAMPING]), critical=True))
+    if url_crl:
+        construtor = construtor.add_extension(x509.CRLDistributionPoints([x509.DistributionPoint(
+            full_name=[x509.UniformResourceIdentifier(url_crl)], relative_name=None, reasons=None, crl_issuer=None)]),
+            critical=False)
+    cert = construtor.sign(chave_emissora, hashes.SHA256())
     return DummyTimeStamper(
         tsa_cert=a_x509.Certificate.load(cert.public_bytes(serialization.Encoding.DER)),
         tsa_key=a_keys.PrivateKeyInfo.load(chave.private_bytes(serialization.Encoding.DER,
                                                                serialization.PrivateFormat.PKCS8,
-                                                               serialization.NoEncryption())))
+                                                               serialization.NoEncryption())),
+        certs_to_embed=SimpleCertificateStore())
 
 
-@pytest.fixture(scope="session")
-def tsa_local():
-    """Sobe um servidor RFC 3161 em 127.0.0.1 e devolve a URL. Registra o que foi recebido, para conferir."""
+def servidor_rfc3161(carimbador) -> dict:
+    """Sobe um servidor RFC 3161 em 127.0.0.1 com esse carimbador e registra o que recebe."""
     from asn1crypto import tsp
-    carimbador = _tsa_de_teste()
     recebidos = []
 
     class Handler(http.server.BaseHTTPRequestHandler):
@@ -63,9 +71,15 @@ def tsa_local():
             pass
     servidor = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     threading.Thread(target=servidor.serve_forever, daemon=True).start()
-    porta = servidor.server_address[1]
-    yield {"url": f"http://127.0.0.1:{porta}/tsr", "recebidos": recebidos}
-    servidor.shutdown()
+    return {"url": f"http://127.0.0.1:{servidor.server_address[1]}/tsr", "recebidos": recebidos, "servidor": servidor}
+
+
+@pytest.fixture(scope="session")
+def tsa_local():
+    """TSA de teste autoassinada, em 127.0.0.1: basta para provar o carimbo (o LTV usa outra, sob a AC de teste)."""
+    tsa = servidor_rfc3161(tsa_de_teste())
+    yield tsa
+    tsa["servidor"].shutdown()
 
 
 def _porta_fechada() -> int:

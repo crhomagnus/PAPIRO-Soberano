@@ -1,11 +1,12 @@
-# HANDOFF — PAPIRO SOBERANO · Sessão 2026-09-17 (assinatura A3 + pastas monitoradas + carimbo do tempo)
+# HANDOFF — PAPIRO SOBERANO · Sessão 2026-09-17 (assinatura A3 + pastas monitoradas + carimbo do tempo + LTV)
 
 > Continuação de `HANDOFF_SESSAO_2026-09-17_RECEITAS_TEMPLATES.md`. Tudo abaixo foi medido nesta sessão
 > (17/09/2026, 18:00–20:30 -03) no clone Linux `~/PAPIRO-Soberano`. O que não foi medido está marcado como
 > **não verificado**.
 
 ## 1. Pedido
-"implemente a assinatura A3 e as pastas monitoradas" e, em seguida, "implemente o carimbo do tempo (TSA)".
+"implemente a assinatura A3 e as pastas monitoradas", "implemente o carimbo do tempo (TSA)" e "implemente o LTV
+(B-LT/B-LTA)". O LTV ficou inacabado ao fim da sessão e foi concluído na auditoria de 17/09 (ver §3-C e §4).
 
 ## 2. Assinatura A3 — token ou cartão via PKCS#11 (RF-806, PRD §12.1)
 - `sign` e `certify` (servidor `papiro-seguranca`) agora aceitam **duas credenciais**: A1 (`pfx=` + `senha_ref=`,
@@ -29,8 +30,9 @@
   aparência visível (recusada quando cairia sobre o conteúdo), `certify` DocMDP, e A1 sem regressão.
   `pip install "pyhanko[pkcs11]"` (python-pkcs11 0.9.5) foi acrescentado ao venv; `softhsm2` e `opensc` instalados
   no sistema **apenas para teste** (os testes se pulam sozinhos onde eles não existirem).
-- **Não verificado:** token A3 real ICP-Brasil (não tenho o token aqui), comportamento no Windows, carimbo do tempo
-  (TSA), LTV B-LT/B-LTA e o fallback JSignPdf — continuam sem suporte, como antes.
+- **Não verificado:** token A3 real ICP-Brasil (não tenho o token aqui) e comportamento no Windows. O carimbo do
+  tempo e o LTV, que eram "sem suporte" quando esta seção foi escrita, foram implementados em seguida (§3-B e §3-C);
+  o fallback JSignPdf continua sem suporte.
 
 ## 3. Pastas monitoradas (RF-906) — `core/papiro_core/vigia.py`
 - Um bloco `[[pastas]]` no `papiro.toml` liga **uma pasta a uma receita**: `nome`, `entrada`, `receita`, `campo`
@@ -86,6 +88,28 @@
 - **Não verificado:** TSA pública real (ex.: freetsa.org) e TSA de ACT credenciada ICP-Brasil; `ltv_update`
   (B-LT/B-LTA) continua sem suporte, porque exige buscar revogação on-line.
 
+## 3-C. LTV — PAdES B-LT e B-LTA (RF-806, PRD §12.1)
+- **O que passou a existir:** `ltv_update` deixou de ser `E_SEM_SUPORTE`. Ele busca a revogação (CRL/OCSP) na AC que
+  emitiu o certificado e grava a prova dentro do PDF, no **DSS** (Document Security Store) → **PAdES-B-LT**. Com
+  `lta=true` acrescenta um carimbo do tempo de arquivo por cima → **PAdES-B-LTA**. `sign`/`certify` também aceitam
+  `ltv='lt'|'lta'` para fazer tudo de uma vez (assinar, carimbar e guardar a revogação).
+- **Por que isso importa:** sem LTV, a assinatura só é verificável enquanto o certificado e a CRL estiverem
+  acessíveis e válidos. Com B-LT/B-LTA a prova viaja dentro do documento — é o que dá validade de longo prazo.
+- **Pré-condição que não existe neste PC (e sem a qual o LTV NÃO roda):** as **âncoras da ICP-Brasil**. O LTV precisa
+  fechar a cadeia do certificado (e a do certificado da TSA) até uma raiz confiável. Sem `certs/icp-brasil`
+  populado — ou `[assinatura] raizes` apontando para outra pasta — a chamada devolve `E_CONFORMIDADE` dizendo
+  exatamente isso. É também por isso que `verify` nunca marca `confiavel: true` hoje.
+- **Privacidade (§12.5):** buscar revogação é rede. O documento **nunca sai** da máquina — a consulta revela apenas
+  *qual certificado* está sendo verificado. Ainda assim, em job sensível a chamada é recusada (`E_POLITICA`) até vir
+  `rede_ltv=true`, e toda operação devolve aviso dizendo o que foi consultado.
+- **Erros úteis:** sem âncora → `E_CONFORMIDADE` explicando onde pôr as ACs; documento sem assinatura → `E_ENTRADA`;
+  AC que não responde → `E_TEMPO`; cadeia que não fecha → `E_CONFORMIDADE`; DSS que ficou vazio → `E_CONFORMIDADE`
+  (a operação não finge sucesso); `ltv` sem carimbo → `E_ENTRADA` (B-LT e B-LTA são carimbados por definição).
+- **Como foi testado:** uma **PKI completa em 127.0.0.1** — AC de teste, certificado do assinante com ponto de
+  distribuição de CRL, TSA emitida pela mesma AC e servidor HTTP servindo a CRL de verdade. O teste confere que a
+  CRL foi **realmente buscada** (conta os pedidos no servidor) e que o DSS ficou com a cadeia e a CRL dentro.
+- **Não verificado:** cadeia real da ICP-Brasil (faltam as âncoras), TSA de ACT credenciada e `validar.iti.gov.br`.
+
 ## 4. Testes
 `core/tests/test_assinatura_a3.py` (16 testes: token e certificados, assinatura + verificação, token único,
 `certify`, aparência visível, 7 erros de token/PIN/módulo, políticas, PIN fora do log, `prompt` sem terminal, CLI)
@@ -94,6 +118,8 @@ terminar, arquivo ruim vai para `falhas/`, **falha não vira laço**, **não ass
 `watch`/`watch_status`, CLI).
 `core/tests/test_carimbo_tsa.py` (8 testes: B-T, só o resumo vai para a TSA, carimbo do documento, carimbo sobre
 assinatura, erros da TSA, política do job sensível, TSA vinda da configuração, assinatura sem carimbo continua B-B).
+`core/tests/test_ltv.py` (6 testes: B-LT busca a CRL de verdade e grava no DSS, B-LTA com carimbo de arquivo,
+`sign ltv='lta'` de uma vez, erros sem âncora e sem assinatura, política do job sensível, confirmação obrigatória).
 **Rodada completa antes do carimbo (17/09/2026 19:11): 169 testes passando, 0 falhas, cobertura 87%**
 Depois do carimbo, os arquivos afetados foram repetidos (20:15): carimbo 8/8, segurança 11/11, A3 16/16, vigia 9/9.
 Um teste antigo precisou mudar: `timestamp` sem TSA agora responde `E_ENTRADA` (pedindo a TSA) no lugar do antigo
@@ -101,8 +127,21 @@ Um teste antigo precisou mudar: `timestamp` sem TSA agora responde `E_ENTRADA` (
 Os 9 do vigia foram repetidos depois da correção do laço: verdes. A suíte levou 35 min contra 12 min da rodada
 anterior — a máquina estava disputada (Rhino e Chrome abertos), não houve mudança de desempenho no PAPIRO.
 
+**Auditoria de 17/09/2026 (21:15–22:58).** Suíte completa de **184 testes: 182 passaram, 2 falharam, cobertura 87%**
+(5.058 comandos, 640 sem cobertura) — as duas falhas eram do LTV inacabado, e foram corrigidas (ver §3-C e a lista
+abaixo). Depois das correções, os arquivos afetados foram repetidos e fecharam **41 de 41**: LTV 6/6 (rodado
+**isolado**, para provar que não depende mais da ordem), segurança 11/11, carimbo 8/8 e A3 16/16.
+
+Três defeitos que a auditoria achou no LTV, todos corrigidos:
+1. `ltv_update` validava a âncora **antes** de olhar se havia assinatura — um PDF sem assinatura respondia
+   `E_CONFORMIDADE` ("sem âncora") em vez do `E_ENTRADA` útil. A ordem foi invertida.
+2. `test_seguranca_cli_nucleo` ainda esperava `E_SEM_SUPORTE` de `ltv_update`, expectativa da versão anterior.
+3. A fixture `pki_teste` não definia `PAPIRO_TESTE_PFX_SENHA`, embora criasse o `.pfx` com essa senha: 3 testes de
+   LTV só passavam quando outro arquivo de teste rodava antes (`test_assinatura_a3`/`test_carimbo_tsa`, por ordem
+   alfabética) e caíam em `E_SENHA` quando rodados sozinhos. Era a única fixture do projeto com essa fragilidade.
+
 ## 5. Continua NÃO implementado
-LTV B-LT/B-LTA (`ltv_update`) · JSignPdf · tradução com layout (RF-608) · alt-text por visão (RF-609) · decks Touying
+JSignPdf · tradução com layout (RF-608) · alt-text por visão (RF-609) · decks Touying
 (RF-501..506) · Docling/PaddleOCR-VL · `conform` pdfua/pdfx/remediate · XFDF · criação/detecção de campos
 (RF-701/702) · Vega-Lite (RF-305) · docx/epub/dxf · embeddings no RAG · Tesseract 5 no Linux · RNF-10 (mesmo hash)
 **não verificado** · Windows não testado.
@@ -116,4 +155,7 @@ LTV B-LT/B-LTA (`ltv_update`) · JSignPdf · tradução com layout (RF-608) · a
    "testado com token de software" para "homologado".
 5. Carimbar com uma TSA de verdade: `sign ... carimbo=true tsa="https://freetsa.org/tsr"` (ou a da sua ACT) e
    conferir o PDF em `validar.iti.gov.br`.
-6. Próximos itens de maior valor: LTV (B-LT/B-LTA) → Vega-Lite (RF-305) → `conform` pdfua/remediate.
+6. **Popular `certs/icp-brasil`** com as ACs raiz da ICP-Brasil (ITI). É o que falta para o `verify` marcar
+   `confiavel` e para o LTV rodar fora do teste — hoje a pasta não existe e o LTV devolve `E_CONFORMIDADE`.
+7. LTV com certificado real: `sign ... carimbo=true tsa=<ACT> ltv=lta` e conferir em `validar.iti.gov.br`.
+8. Próximos itens de maior valor: Vega-Lite (RF-305) → `conform` pdfua/remediate → decks Touying (RF-501..506).

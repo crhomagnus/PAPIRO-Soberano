@@ -6,7 +6,8 @@
 
 **Repo:** https://github.com/crhomagnus/PAPIRO-Soberano · **Branch:** `master` · **Núcleo:** `core/papiro_core` (Python ≥3.12)
 
-Estado medido em 17/09/2026: **145 testes passando, 0 falhas, cobertura 87%** (ver `HANDOFF_SESSAO_2026-09-17_RECEITAS_TEMPLATES.md`).
+Estado medido em 17/09/2026 (auditoria): **184 testes, cobertura 87%** — a suíte completa acusou 2 falhas do LTV inacabado,
+corrigidas em seguida, com os 41 testes dos arquivos afetados verdes (ver `HANDOFF_SESSAO_2026-09-17_A3_PASTAS.md` §4).
 Windows ainda **não testado** — código portátil (RNF-17), validação feita no Linux.
 
 ## O que é
@@ -103,12 +104,15 @@ papiro.toml engines.lock.toml opencode.json .mcp.json AGENTS.md HANDOFF_*.md
 * `HANDOFF_SESSAO_2026-09-16_PAPIRO-SOBERANO.md` — handoff original (superado).
 * `HANDOFF_SESSAO_2026-09-16_CORRECOES.md` — varredura que provou defeitos + correção total (107 testes, cobertura 86%).
 * `HANDOFF_SESSAO_2026-09-17_RECEITAS_TEMPLATES.md` — executor de receitas + 16 templates (145 testes, cobertura 87%).
+* `HANDOFF_SESSAO_2026-09-17_A3_PASTAS.md` — assinatura A3 (PKCS#11), pastas monitoradas RF-906, carimbo do tempo RFC 3161 e LTV.
 * `TRANSCRICAO_COMPLETA_SESSAO_2026-09-16.md` — transcrição.
 * `docs/AGENTE_AUTONOMO_ENGENHARIA_PDF.md` + `docs/PAPIRO_PRD_ORIGINAL.md` — fontes canônicas.
 
 ## Pendente / não verificado
 
-Tradução com layout (RF-608) · alt-text por visão (RF-609) · decks Touying (RF-501–506) · pastas monitoradas/agendamento (RF-906/907) · A3/PKCS#11, carimbo do tempo, LTV · Docling/PaddleOCR-VL · `conform` pdfua/pdfx/remediate · XFDF · campos RF-701/702 · Vega-Lite RF-305 · docx/epub/dxf · embeddings RAG · RNF-10 (mesmo hash) e RNF-12 sem verificação · **Windows não testado**.
+Tradução com layout (RF-608) · alt-text por visão (RF-609) · decks Touying (RF-501–506) · Docling/PaddleOCR-VL · `conform` pdfua/pdfx/remediate · XFDF · campos RF-701/702 · Vega-Lite RF-305 · docx/epub/dxf · embeddings RAG · RNF-10 (mesmo hash) e RNF-12 sem verificação · **Windows não testado**.
+
+**Implementado, mas sem homologação:** assinatura A3 (PKCS#11) provada com token de software SoftHSM2, nunca com token ICP-Brasil real; carimbo do tempo provado contra TSA RFC 3161 local, nunca contra ACT credenciada; LTV (B-LT/B-LTA) provado com PKI de teste. **Falta popular `certs/icp-brasil` com as ACs raiz da ICP-Brasil** — sem elas o `verify` nunca marca `confiavel` e o LTV recusa por não conseguir fechar a cadeia. Homologação final em `validar.iti.gov.br`.
 
 ## Segurança e conformidade
 

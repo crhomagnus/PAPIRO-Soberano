@@ -5,7 +5,7 @@ Regras §12: operacao sensivel exige confirm=true; documento reprovado nos porto
 e PIN de token (A3) nunca entram como argumento - vem de keyring, variavel de ambiente ou do terminal no ato - e nunca
 vao para log; verificacao sempre local (allow_fetching=False); retangulo preto sem remocao e proibido."""
 from __future__ import annotations
-import contextlib, json, os, pathlib, sys, urllib.parse
+import contextlib, json, os, pathlib, shutil, sys, urllib.parse
 from mcp.server.fastmcp import FastMCP
 from . import FONTS, REPO, WORK, config
 from .caminhos import nome_seguro
@@ -128,6 +128,55 @@ def _carimbador(tsa: str, rede_tsa: bool):
     aviso = (f"carimbo do tempo: so o resumo SHA-256 do documento foi enviado a {servidor}; "
              "o conteudo do documento nao saiu da maquina")
     return carimbador, servidor, [aviso]
+
+
+def _contexto_validacao(buscar: bool):
+    """Contexto de validacao com as ancoras locais. Para LTV e preciso buscar revogacao (CRL/OCSP) na AC emissora."""
+    from pyhanko_certvalidator import ValidationContext
+    raizes = _raizes()
+    if buscar and not raizes:
+        raise PapiroErro("E_CONFORMIDADE", "LTV precisa validar a cadeia do certificado ate uma ancora confiavel, e "
+                                           "nenhuma foi carregada: ponha as ACs da ICP-Brasil em certs/icp-brasil "
+                                           "(ou aponte [assinatura] raizes no papiro.toml)")
+    return ValidationContext(trust_roots=raizes or None, allow_fetching=buscar,
+                             revocation_mode="hard-fail" if buscar else "soft-fail")
+
+
+def _autorizar_ltv(rede_ltv: bool) -> list[str]:
+    """LTV consulta a AC emissora sobre o certificado. O documento nunca sai - mas continua sendo rede (§12.5)."""
+    sensivel = (WORK / "_sensivel.flag").exists() or os.environ.get("PAPIRO_SENSIVEL") == "1"
+    if sensivel and not rede_ltv:
+        raise PapiroErro("E_POLITICA", "job sensivel nao fala com servico on-line (§12.5). O LTV consulta a AC "
+                                       "emissora (CRL/OCSP) para provar que o certificado valia agora; a consulta "
+                                       "revela qual certificado esta sendo verificado, nunca o documento. "
+                                       "Para aceitar, repita com rede_ltv=true.")
+    return ["LTV: a revogacao (CRL/OCSP) foi consultada na AC emissora do certificado; a consulta revela qual "
+            "certificado esta sendo verificado - o documento e o conteudo dele nao saem da maquina"]
+
+
+def _erro_ltv(e: Exception) -> PapiroErro:
+    nome, texto = type(e).__name__, str(e)
+    if "timeout" in nome.lower() or "timed out" in texto.lower():
+        return PapiroErro("E_TEMPO", "a AC emissora nao respondeu a tempo a consulta de revogacao (CRL/OCSP)")
+    if ("self-signed" in texto or "validation path" in texto or "PathBuilding" in nome
+            or "InvalidCertificate" in nome):
+        return PapiroErro("E_CONFORMIDADE", f"nao consegui montar a cadeia do certificado ate uma ancora confiavel "
+                                            f"(LTV exige isso): {texto[:150]}")
+    if "Revoked" in nome or "revocation" in texto.lower() or "CRL" in texto or "OCSP" in texto:
+        return PapiroErro("E_CONFORMIDADE", f"nao consegui obter a revogacao do certificado: {texto[:150]}")
+    return PapiroErro("E_MOTOR", f"LTV: {nome} {texto[:160]}")
+
+
+def _dss_do_pdf(pdf: pathlib.Path) -> dict:
+    """O que ficou guardado no Document Security Store: cadeia, CRLs e respostas OCSP."""
+    from pyhanko.pdf_utils.reader import PdfFileReader
+    from pyhanko.sign.validation.dss import DocumentSecurityStore
+    with open(pdf, "rb") as fh:
+        try:
+            dss = DocumentSecurityStore.read_dss(PdfFileReader(fh, strict=False))
+        except Exception:  # noqa: BLE001 - documento sem DSS
+            return {"certificados": 0, "crls": 0, "ocsps": 0}
+    return {"certificados": len(dss.certs), "crls": len(dss.crls), "ocsps": len(dss.ocsps)}
 
 
 def tokens_conectados(lib_location: str) -> list[dict]:
@@ -284,7 +333,8 @@ def _area_livre(pdf: pathlib.Path, pagina: int, caixa_pdf: tuple[float, float, f
 
 def _assinar(ctx: Contexto, cred: dict, certificar: bool, visivel: bool, pagina: int, caixa: str,
              nome_campo: str, motivo: str, local: str, crm: str, url_validacao: str, exigir_qa: bool,
-             carimbo: bool = False, tsa: str = "", rede_tsa: bool = False) -> Resultado:
+             carimbo: bool = False, tsa: str = "", rede_tsa: bool = False, ltv: str = "",
+             rede_ltv: bool = False) -> Resultado:
     from pyhanko import stamp
     from pyhanko.pdf_utils.font.opentype import GlyphAccumulatorFactory
     from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
@@ -311,14 +361,26 @@ def _assinar(ctx: Contexto, cred: dict, certificar: bool, visivel: bool, pagina:
             estilo = stamp.QRStampStyle(stamp_text=texto + "\nValide: %(url)s", text_box_style=caixa_texto, border_width=0)
         else:
             estilo = stamp.TextStampStyle(stamp_text=texto, text_box_style=caixa_texto, border_width=0)
+    ltv = (ltv or "").strip().lower()
+    if ltv and ltv not in ("lt", "lta"):
+        raise PapiroErro("E_ENTRADA", "ltv deve ser 'lt' (B-LT) ou 'lta' (B-LTA)")
+    if ltv and not (carimbo or tsa):
+        raise PapiroErro("E_ENTRADA", "B-LT e B-LTA sao carimbados por definicao: use carimbo=true (e a TSA)")
+    extra = {}
+    avisos_ltv = []
+    if ltv:
+        avisos_ltv = _autorizar_ltv(rede_ltv)
+        extra = {"embed_validation_info": True, "validation_context": _contexto_validacao(True),
+                 "use_pades_lta": ltv == "lta"}
     meta = signers.PdfSignatureMetadata(field_name=nome_campo, subfilter=fields.SigSeedSubFilter.PADES,
                                         md_algorithm="sha256", certify=certificar, reason=motivo or None,
                                         location=local or None,
-                                        docmdp_permissions=fields.MDPPerm.FILL_FORMS)
+                                        docmdp_permissions=fields.MDPPerm.FILL_FORMS, **extra)
     out = ctx.saida(("certificado" if certificar else "assinado") + ".pdf")
     carimbador, servidor, avisos = (None, None, [])
     if carimbo or tsa:
         carimbador, servidor, avisos = _carimbador(tsa, rede_tsa)
+    avisos = avisos + avisos_ltv
     with _abrir_credencial(ctx, cred) as (signer, descricao):
         try:
             with open(entrada, "rb") as inf, open(out, "wb") as outf:
@@ -331,6 +393,8 @@ def _assinar(ctx: Contexto, cred: dict, certificar: bool, visivel: bool, pagina:
         except Exception as e:  # noqa: BLE001 - falha do token ou da TSA no meio da assinatura
             if cred["tipo"] == "a3" and type(e).__module__.startswith("pkcs11"):
                 raise _erro_pkcs11(e)
+            if ltv and type(e).__module__.split(".")[0] in ("pyhanko", "pyhanko_certvalidator", "asn1crypto"):
+                raise _erro_ltv(e)
             if carimbador is not None and type(e).__module__.split(".")[0] in ("pyhanko", "aiohttp", "asyncio"):
                 raise _erro_tsa(e, servidor)
             raise
@@ -339,10 +403,13 @@ def _assinar(ctx: Contexto, cred: dict, certificar: bool, visivel: bool, pagina:
         raise PapiroErro("E_CONFORMIDADE", "assinatura gerada nao passou na verificacao local")
     if carimbador is not None and not any(s.get("carimbo") for s in verif):
         raise PapiroErro("E_CONFORMIDADE", f"a TSA {servidor} respondeu, mas o carimbo nao ficou no documento")
-    dados = {"perfil": "PAdES-B-T" if carimbador is not None else "PAdES-B-B", "certificado": certificar,
-             "credencial": descricao, "verificacao": verif}
+    perfil = {"lt": "PAdES-B-LT", "lta": "PAdES-B-LTA"}.get(ltv, "PAdES-B-T" if carimbador is not None else "PAdES-B-B")
+    dados = {"perfil": perfil, "certificado": certificar, "credencial": descricao, "verificacao": verif}
     if carimbador is not None:
-        dados["carimbo"] = {"tsa": servidor, **(verif[-1].get("carimbo") or {})}
+        carimbos = [v.get("carimbo") for v in verif if v.get("carimbo")]
+        dados["carimbo"] = {"tsa": servidor, **(carimbos[-1] if carimbos else {})}
+    if ltv:
+        dados["dss"] = _dss_do_pdf(out)
     return Resultado(outputs=[out], motor="pyhanko" + ("+rfc3161" if carimbador is not None else ""),
                      dados=dados, warnings=avisos)
 
@@ -420,17 +487,19 @@ def sign(entrada: str, out_dir: str, pfx: str = "", senha_ref: str = "", confirm
          pagina: int = 1, caixa: str = "", crm: str = "", url_validacao: str = "https://validar.iti.gov.br",
          motivo: str = "", local: str = "", nome_campo: str = "Assinatura1", token: str = "", modulo: str = "",
          pin_ref: str = "", rotulo: str = "", id_chave: str = "", slot: int | None = None, carimbo: bool = False,
-         tsa: str = "", rede_tsa: bool = False, dry_run: bool = False) -> dict:
+         tsa: str = "", rede_tsa: bool = False, ltv: str = "", rede_ltv: bool = False, dry_run: bool = False) -> dict:
     """RF-806 PAdES-B-B (ou B-T com carimbo do tempo). A1: pfx= + senha_ref='env:NOME'|'keyring:servico/usuario'.
     A3 (token/cartao ICP-Brasil): token=<rotulo do token> e/ou modulo=<biblioteca PKCS#11> + pin_ref=(env:|keyring:|prompt);
     rotulo=/id_chave= escolhem o certificado quando o token tem mais de um. O PIN nunca e gravado nem vai para log.
-    carimbo=true (ou tsa='https://...') acrescenta carimbo do tempo RFC 3161 -> PAdES-B-T; so o resumo SHA-256 vai a TSA."""
+    carimbo=true (ou tsa='https://...') acrescenta carimbo do tempo RFC 3161 -> PAdES-B-T; so o resumo SHA-256 vai a TSA.
+    ltv='lt'|'lta' guarda dentro do PDF a prova de que o certificado valia (consulta CRL/OCSP na AC emissora)."""
     def acao(ctx):
         _confirmar("sign", confirm)
         cred = _credencial(pfx, senha_ref, token, modulo, pin_ref, rotulo, id_chave, slot)
         return _assinar(ctx, cred, False, visivel, pagina, caixa, nome_campo, motivo, local, crm,
-                        url_validacao if visivel else "", exigir_qa=True, carimbo=carimbo, tsa=tsa, rede_tsa=rede_tsa)
-    perfil = "pades-b-t" if (carimbo or tsa) else "pades-b-b"
+                        url_validacao if visivel else "", exigir_qa=True, carimbo=carimbo, tsa=tsa, rede_tsa=rede_tsa,
+                        ltv=ltv, rede_ltv=rede_ltv)
+    perfil = "pades-b-" + ((ltv or "").strip().lower() or ("t" if (carimbo or tsa) else "b"))
     return executar("sign", perfil + ("-a3" if _e_a3(token, modulo, pin_ref, rotulo, id_chave, slot) else ""), acao,
                     entradas=[entrada] + ([pfx] if pfx else []), out_dir=out_dir, tarefa="assinatura", dry_run=dry_run)
 
@@ -439,14 +508,14 @@ def sign(entrada: str, out_dir: str, pfx: str = "", senha_ref: str = "", confirm
 def certify(entrada: str, out_dir: str, pfx: str = "", senha_ref: str = "", confirm: bool = False,
             nome_campo: str = "Certificacao", token: str = "", modulo: str = "", pin_ref: str = "", rotulo: str = "",
             id_chave: str = "", slot: int | None = None, carimbo: bool = False, tsa: str = "", rede_tsa: bool = False,
-            dry_run: bool = False) -> dict:
+            ltv: str = "", rede_ltv: bool = False, dry_run: bool = False) -> dict:
     """Assinatura de certificacao DocMDP (permite so preenchimento e novas assinaturas). A1 (pfx) ou A3 (token) e
     carimbo do tempo opcional, como em sign."""
     def acao(ctx):
         _confirmar("certify", confirm)
         cred = _credencial(pfx, senha_ref, token, modulo, pin_ref, rotulo, id_chave, slot)
         return _assinar(ctx, cred, True, False, 1, "", nome_campo, "Certificacao", "", "", "", exigir_qa=True,
-                        carimbo=carimbo, tsa=tsa, rede_tsa=rede_tsa)
+                        carimbo=carimbo, tsa=tsa, rede_tsa=rede_tsa, ltv=ltv, rede_ltv=rede_ltv)
     return executar("certify", "docmdp", acao, entradas=[entrada] + ([pfx] if pfx else []), out_dir=out_dir,
                     tarefa="assinatura", dry_run=dry_run)
 
@@ -484,12 +553,64 @@ def timestamp(entrada: str, out_dir: str, confirm: bool = False, tsa: str = "", 
 
 
 @mcp.tool()
-def ltv_update(entrada: str, out_dir: str, confirm: bool = False, dry_run: bool = False) -> dict:
-    """B-LT/B-LTA: sem suporte nesta versao (exige buscar revogacao on-line)."""
-    def acao(_ctx):
+def ltv_update(entrada: str, out_dir: str, confirm: bool = False, lta: bool = False, tsa: str = "",
+               rede_ltv: bool = False, rede_tsa: bool = False, dry_run: bool = False) -> dict:
+    """RF-806 B-LT/B-LTA em documento ja assinado: guarda dentro do PDF a prova de que o certificado valia.
+
+    Consulta a revogacao (CRL/OCSP) na AC emissora e grava no DSS -> PAdES-B-LT. Com lta=true acrescenta um carimbo
+    do tempo de arquivo por cima -> PAdES-B-LTA (precisa de TSA). A consulta revela qual certificado esta sendo
+    verificado; o documento nunca sai da maquina. Em job sensivel, exige rede_ltv=true (§12.5)."""
+    def acao(ctx):
         _confirmar("ltv_update", confirm)
-        raise PapiroErro("E_SEM_SUPORTE", "LTV exige dados de revogacao (OCSP/CRL) buscados on-line")
-    return executar("ltv_update", "b-lta", acao, entradas=[entrada], out_dir=out_dir, tarefa="assinatura", dry_run=dry_run)
+        from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
+        from pyhanko.pdf_utils.reader import PdfFileReader
+        from pyhanko.sign import signers
+        from pyhanko.sign.validation import add_validation_info
+        avisos = _autorizar_ltv(rede_ltv)
+        with open(ctx.entradas[0], "rb") as fh:
+            quantas = len(PdfFileReader(fh, strict=False).embedded_signatures)
+        if not quantas:
+            raise PapiroErro("E_ENTRADA", "documento sem assinatura: nao ha o que provar no LTV")
+        vc = _contexto_validacao(True)   # so depois de saber que ha assinatura: o erro util vem primeiro
+        ctx.work.mkdir(parents=True, exist_ok=True)
+        atual = ctx.entradas[0]
+        for i in range(quantas):
+            destino = ctx.work / f"ltv_{i}.pdf"
+            with open(atual, "rb") as fh:
+                sig = PdfFileReader(fh, strict=False).embedded_signatures[i]
+                try:
+                    with open(destino, "wb") as saida:
+                        add_validation_info(sig, vc, output=saida)
+                except PapiroErro:
+                    raise
+                except Exception as e:  # noqa: BLE001 - cadeia, revogacao ou rede
+                    raise _erro_ltv(e)
+            atual = destino
+        if lta:
+            carimbador, servidor, aviso_tsa = _carimbador(tsa, rede_tsa or rede_ltv)
+            destino = ctx.work / "ltv_lta.pdf"
+            try:
+                with open(atual, "rb") as fh, open(destino, "wb") as saida:
+                    signers.PdfTimeStamper(carimbador, field_name="CarimboArquivo").timestamp_pdf(
+                        IncrementalPdfFileWriter(fh, strict=False), "sha256", output=saida)
+            except PapiroErro:
+                raise
+            except Exception as e:  # noqa: BLE001 - falha da TSA
+                raise _erro_tsa(e, servidor)
+            atual, avisos = destino, avisos + aviso_tsa
+        out = ctx.saida("ltv.pdf")
+        shutil.copyfile(atual, out)
+        verif = _verificar(out)
+        dss = _dss_do_pdf(out)
+        if not dss["crls"] and not dss["ocsps"]:
+            raise PapiroErro("E_CONFORMIDADE", "a operacao terminou sem guardar revogacao no documento (DSS vazio)")
+        if not all(v["intacta"] for v in verif):
+            raise PapiroErro("E_CONFORMIDADE", "o documento nao continuou integro depois do LTV")
+        return Resultado(outputs=[out], motor="pyhanko+ltv", warnings=avisos,
+                         dados={"perfil": "PAdES-B-LTA" if lta else "PAdES-B-LT", "assinaturas": quantas,
+                                "dss": dss, "verificacao": verif})
+    return executar("ltv_update", "b-lta" if lta else "b-lt", acao, entradas=[entrada], out_dir=out_dir,
+                    tarefa="assinatura", dry_run=dry_run)
 
 
 @mcp.tool()

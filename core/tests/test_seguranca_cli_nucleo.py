@@ -54,7 +54,8 @@ def test_assinar_verificar_e_travas(pdf_bom, pdf_helv, pfx_teste, out_dir):
     assert ok(S.verify(str(pdf_bom), out_dir))["warnings"] == ["documento sem assinaturas"]
     # carimbo do tempo existe (test_carimbo_tsa.py); sem TSA configurada, ele pede a TSA
     assert envelope_ok(S.timestamp(str(pdf_bom), out_dir, confirm=True))["error"]["code"] == "E_ENTRADA"
-    assert envelope_ok(S.ltv_update(str(pdf_bom), out_dir, confirm=True))["error"]["code"] == "E_SEM_SUPORTE"
+    # LTV existe (test_ltv.py); em documento sem assinatura ele diz que nao ha o que provar
+    assert envelope_ok(S.ltv_update(str(pdf_bom), out_dir, confirm=True))["error"]["code"] == "E_ENTRADA"
 
 
 def test_encrypt_decrypt(pdf_bom, out_dir):
